@@ -7,10 +7,12 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Exit from "./pages/Exit";
 import Landing from "./pages/Landing";
+import DeviceGuard from "./components/DeviceGuard";
 
 
 export default function App() {
   return (
+    <DeviceGuard >
     <Router>
       <div className="flex">
         <Sidebar />
@@ -25,5 +27,6 @@ export default function App() {
         </Routes>
       </div>
     </Router>
+    </DeviceGuard>
   );
 }
