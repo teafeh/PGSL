@@ -3,7 +3,7 @@ import React from 'react'
 const ManageItems = () => {
   return (
     <div>
-      this is mangeIteme page
+      this is mange Iteme page
     </div>
   )
 }
