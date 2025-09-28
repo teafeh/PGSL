@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 export default function Transactions() {
   const [form, setForm] = useState({
@@ -262,41 +263,46 @@ export default function Transactions() {
         <div>
           {/* In Transactions */}
          {/* In Transactions */}
-<div className="border rounded p-3 shadow mb-4 overflow-x-auto">
-  <h3 className="font-semibold mb-2">In Transaction Table</h3>
-  <table className="w-full border min-w-[700px]">
-    <thead>
-      <tr className="bg-gray-200">
-        <th className="p-1 border">Id</th>
-        <th className="p-1 border">Type</th>
-        <th className="p-1 border">Item</th>
-        <th className="p-1 border">Category</th>
-        <th className="p-1 border">Qty</th>
-        <th className="p-1 border">Unit</th>
-        <th className="p-1 border">Partner</th>
-        <th className="p-1 border">Staff</th>
-        <th className="p-1 border">Date</th>
-        <th className="p-1 border">Remarks</th>
+<div className="overflow-x-auto shadow-lg rounded-lg">
+  <table className="w-full border-collapse">
+    <thead className="bg-gray-700 text-white">
+      <tr>
+        <th className="border p-2">ID</th>
+        <th className="border p-2">Date</th>
+        <th className="border p-2">Item Name</th>
+        <th className="border p-2">Category</th>
+        <th className="border p-2">Partner</th>
+        <th className="border p-2">Quantity</th>
+        <th className="border p-2">Unit</th>
       </tr>
     </thead>
     <tbody>
-      {inTransactions.map((t) => (
-        <tr key={t.id}>
-          <td className="border p-1">{t.id}</td>
-          <td className="border p-1">{t.type}</td>
-          <td className="border p-1">{t.itemName}</td>
-          <td className="border p-1">{t.category}</td>
-          <td className="border p-1">{t.quantity}</td>
-          <td className="border p-1">{t.unit}</td>
-          <td className="border p-1">{t.partner}</td>
-          <td className="border p-1">{t.staff}</td>
-          <td className="border p-1">{t.date}</td>
-          <td className="border p-1">{t.remarks}</td>
+      {filteredData.length > 0 ? (
+        filteredData.map((r, i) => (
+          <tr
+            key={r.id}
+            className={`${i % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-blue-50 text-gray-800`}
+          >
+            <td className="border p-2">{r.id}</td>
+            <td className="border p-2">{r.date}</td>
+            <td className="border p-2">{r.itemName}</td>
+            <td className="border p-2">{r.category}</td>
+            <td className="border p-2">{r.partner}</td>
+            <td className="border p-2">{r.quantity}</td>
+            <td className="border p-2">{r.unit}</td>
+          </tr>
+        ))
+      ) : (
+        <tr>
+          <td colSpan="7" className="text-center text-gray-500 py-4">
+            No records found.
+          </td>
         </tr>
-      ))}
+      )}
     </tbody>
   </table>
 </div>
+
 
 {/* Out Transactions */}
 <div className="border rounded p-3 shadow overflow-x-auto">
@@ -334,6 +340,13 @@ export default function Transactions() {
     </tbody>
   </table>
 </div>
+</div>
+<div>
+  <Link to={"/"} className="text-white">
+          <button>
+            Home
+          </button>
+          </Link>
 </div>
       </div>
     </div>

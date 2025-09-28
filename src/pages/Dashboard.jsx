@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 export default function Dashboard() {
   // 📌 Live date & time
@@ -167,7 +168,15 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
+         
         </div>
+          <div>
+            <Link to={"/"} className="text-white">
+          <button>
+            Home
+          </button>
+          </Link>
+          </div>
       </div>
     </div>
   );

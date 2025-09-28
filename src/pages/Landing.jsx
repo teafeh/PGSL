@@ -23,6 +23,7 @@ export default function Landing() {
           <p>Get insights and generate monthly summaries.</p>
         </div>
       </div>
+      
     </div>
   );
 }
