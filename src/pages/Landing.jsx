@@ -1,6 +1,6 @@
 export default function Landing() {
   return (
-    <div className="flex-1 p-6">
+    <div className="min-h-screen w-full flex-1 p-6">
       <h1 className="text-2xl font-bold mb-4">PGSL - Store Automation</h1>
       <p className="mb-6">
         Welcome to the Protogy Store Automation System. Use the menu on the left
