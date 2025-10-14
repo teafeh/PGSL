@@ -72,14 +72,22 @@ export default function Reports() {
     quantity: item.quantity,
   }));
 
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+
+  const formattedTime = currentTime.toLocaleTimeString();
+  const formattedDate = currentTime.toLocaleDateString("en-US", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+  });
+
   return (
     <div className="min-h-screen w-full flex flex-col bg-gray-50 p-6">
       {/* Header */}
-      <div className="flex justify-between items-center bg-gradient-to-r from-blue-500 to-blue-600 text-white p-5 rounded-2xl shadow-lg mb-8">
-        <h2 className="text-2xl font-bold">📊 Reports Dashboard</h2>
-        <div className="text-sm opacity-90">
-          <div>{clock.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</div>
-          <div>{clock.toLocaleTimeString()}</div>
+      <div className="flex justify-between items-center mb-8 bg-gradient-to-r from-sky-600 to-sky-400 text-white p-4 rounded-lg shadow">
+        <h1 className="text-2xl font-bold">📊 Reports Dashboard</h1>
+        <div className="text-right text-sm">
+          <p>{formattedDate}</p>
+          <p>{formattedTime}</p>
         </div>
       </div>
 
