@@ -48,7 +48,7 @@ export default function Sidebar() {
 
         {/* Exit button (sticks to bottom) */}
         <Link
-          to="/exit"
+          to="/"
           className="flex items-center space-x-2 p-2 bg-red-500 text-white rounded mt-auto w-full hover:bg-red-600 transition"
         >
           <LogOut size={18} /> <span>Exit</span>

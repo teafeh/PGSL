@@ -4,10 +4,10 @@ import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import ManageItems from "./pages/ManageItems";
 import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
 import Exit from "./pages/Exit";
 import Landing from "./pages/Landing";
 import DeviceGuard from "./components/DeviceGuard";
+import SettingsPage from "./pages/Settings";
 
 export default function App() {
   return (
@@ -25,7 +25,7 @@ export default function App() {
               <Route path="/transactions" element={<Transactions />} />
               <Route path="/manage-items" element={<ManageItems />} />
               <Route path="/reports" element={<Reports />} />
-              <Route path="/settings" element={<Settings />} />
+              <Route path="/settings" element={<SettingsPage />} />
               <Route path="/exit" element={<Exit />} />
             </Routes>
           </main>
