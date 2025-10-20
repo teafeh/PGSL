@@ -8,7 +8,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { FileDown, Eye, Printer, RefreshCcw } from "lucide-react";
+import { FileDown, Eye, Home, Printer, RefreshCcw } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function Reports() {
   const [filters, setFilters] = useState({
@@ -283,5 +284,6 @@ const ReportControls = ({ handlePrint, handleExportCSV, setShowPreview }) => {
         )}
       </div>
     </div>
+    
   );
 };

@@ -1,16 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Settings } from "lucide-react"; // Using lucide-react for icons
+import { Home } from "lucide-react"; 
 import { Link } from "react-router-dom";
 
-  //  const [currentTime, setCurrentTime] = useState(new Date());
-
-  //  const formattedTime = currentTime.toLocaleTimeString();
-  //  const formattedDate = currentTime.toLocaleDateString("en-US", {
-  //    weekday: "long",
-  //    year: "numeric",
-  //    month: "long",
-  //    day: "numeric",
-  //  });
+  
 // --- Reusable Components ---
 
 // Toggle Switch Component (for Enable/Disable features)
@@ -57,18 +49,26 @@ const SettingsPage = () => {
   const [enableDesktopAlert, setEnableDesktopAlert] = useState(false);
   const [enableOtherAlert, setEnableOtherAlert] = useState(false);
 
+ const [currentTime, setCurrentTime] = useState(new Date());
 
+ const formattedTime = currentTime.toLocaleTimeString();
+ const formattedDate = currentTime.toLocaleDateString("en-US", {
+   weekday: "long",
+   year: "numeric",
+   month: "long",
+   day: "numeric",
+ });
   return (
     // Mimic the application window container style
-    <div className="w-[600px] h-[700px] mx-auto my-10 border border-gray-400 shadow-2xl bg-white flex flex-col font-sans">
+    <div className="min-h-screen w-full flex flex-col bg-gray-50 p-6">
       {/* Header Area (Blue Strip) */}
-      {/* <div className="flex justify-between items-center mb-8 bg-gradient-to-r from-sky-600 to-sky-400 text-white p-4 rounded-lg shadow">
-        <h1 className="text-2xl font-bold">{Settings} Settings Dashboard</h1>
+      <div className="flex justify-between items-center mb-8 bg-gradient-to-r from-sky-600 to-sky-400 text-white p-4 rounded-lg shadow">
+        <h1 className="text-2xl font-bold">⚙️ Settings</h1>
         <div className="text-right text-sm">
           <p>{formattedDate}</p>
           <p>{formattedTime}</p>
         </div>
-      </div> */}
+      </div>
 
       {/* Main Content Area */}
       <div className="flex-grow p-8 space-y-8 overflow-y-auto">
@@ -132,10 +132,10 @@ const SettingsPage = () => {
         {/* Home Button (was Main) */}
         <div className="mt-5">
           <Link
-            to={"/"}
-            className="bg-blue-600 hover:bg-blue-700 text-xl text-white font-semibold py-1 px-4 rounded transition duration-150 ease-in-out"
+            to="/"
+            className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg shadow transition-all duration-300"
           >
-            Home
+            <Home size={18} /> Home
           </Link>
         </div>
       </div>

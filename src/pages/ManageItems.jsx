@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Home } from 'lucide-react';
 
 // --- Utility Components for Reusability ---
+
+
 
 // Input field with a label
 const LabeledInput = ({ label, id, placeholder = '' }) => (
@@ -160,29 +163,33 @@ const UpdateCoupledItem = () => {
   );
 };
 
-// const [currentTime, setCurrentTime] = useState(new Date());
 
-
-//   const formattedTime = currentTime.toLocaleTimeString();
-//   const formattedDate = currentTime.toLocaleDateString("en-US", {
-//     weekday: "long", year: "numeric", month: "long", day: "numeric",
-//   });
 
 // --- Main Screen Component ---
 
 const ManageItems = () => {
+
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  const formattedTime = currentTime.toLocaleTimeString();
+  const formattedDate = currentTime.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
   return (
     <div className="min-h-screen bg-gray-200 flex flex-col">
       {/* Main Content Area */}
       <div className="flex-grow p-4">
         {/* Title Bar (Simulated based on image, but without the full header content) */}
-        {/* <div className="flex justify-between items-center mb-8 bg-gradient-to-r from-sky-600 to-sky-400 text-white p-4 rounded-lg shadow">
-          <h1 className="text-2xl font-bold">📊 Reports Dashboard</h1>
+        <div className="flex justify-between items-center mb-8 bg-gradient-to-r from-sky-600 to-sky-400 text-white p-4 rounded-lg shadow">
+          <h1 className="text-2xl font-bold">📦 Manage Items</h1>
           <div className="text-right text-sm">
             <p>{formattedDate}</p>
             <p>{formattedTime}</p>
           </div>
-        </div> */}
+        </div>
 
         {/* Two-Column Layout */}
         <div className="flex bg-white shadow-lg rounded-b-lg overflow-hidden border-t-2 border-gray-300 h-[calc(100vh-140px)]">
@@ -198,10 +205,10 @@ const ManageItems = () => {
         </div>
         <div className="mt-5">
           <Link
-            to={"/"}
-            className="bg-blue-600 hover:bg-blue-700 text-xl text-white font-semibold py-1 px-4 rounded transition duration-150 ease-in-out"
+            to="/"
+            className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg shadow transition-all duration-300"
           >
-            Home
+            <Home size={18} /> Home
           </Link>
         </div>
       </div>
