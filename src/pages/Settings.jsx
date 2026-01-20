@@ -60,15 +60,21 @@ const SettingsPage = () => {
  });
   return (
     // Mimic the application window container style
-    <div className="min-h-screen w-full flex flex-col bg-gray-50 p-6">
-      {/* Header Area (Blue Strip) */}
-      <div className="flex justify-between items-center mb-8 bg-gradient-to-r from-sky-600 to-sky-400 text-white p-4 rounded-lg shadow">
-        <h1 className="text-2xl font-bold">⚙️ Settings</h1>
-        <div className="text-right text-sm">
-          <p>{formattedDate}</p>
-          <p>{formattedTime}</p>
+    <div className="min-h-screen w-full flex flex-col bg-gray-50">
+      <header className="bg-sky-300 border-b border-gray-200">
+        <div className="max-w-[1500px] mx-auto px-4 py-4 flex items-center">
+          <div className="flex-1 text-center">
+            <h1 className="text-4xl font-extrabold">Settings</h1>
+          </div>
+
+          <div className="text-right text-sm font-semibold">
+            <div>
+              <span className="font-extrabold">Today :</span> {formattedDate}
+            </div>
+            <div>{formattedTime}</div>
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Main Content Area */}
       <div className="flex-grow p-8 space-y-8 overflow-y-auto">

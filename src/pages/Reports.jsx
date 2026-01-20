@@ -1,289 +1,513 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  ResponsiveContainer,
   BarChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
+  Legend,
+  LabelList,
 } from "recharts";
-import { FileDown, Eye, Home, Printer, RefreshCcw } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Eye, RefreshCcw, Home, X, FileDown, Printer } from "lucide-react";
 
-export default function Reports() {
-  const [filters, setFilters] = useState({
-    itemName: "",
-    partner: "",
-    fromDate: "",
-    toDate: "",
-  });
-  const [clock, setClock] = useState(new Date());
-  const [showPreview, setShowPreview] = useState(false);
-  const [filteredData, setFilteredData] = useState([]);
-  const [data] = useState([
-    { id: 1, date: "2025-08-15", itemName: "Meter Base", category: "Meter Base", partner: "None", quantity: 20, unit: "Cartons" },
-    { id: 2, date: "2025-08-18", itemName: "PCB (SPM)", category: "PCB", partner: "None", quantity: 50, unit: "Cartons" },
-    { id: 3, date: "2025-08-20", itemName: "Breaker", category: "Breaker", partner: "Uche", quantity: 10, unit: "Units" },
-  ]);
+const inputWin =
+  "h-10 w-full border border-gray-300 bg-white px-3 text-sm text-black outline-none";
+const selectWin =
+  "h-10 w-full border border-gray-300 bg-white px-3 text-sm text-black outline-none";
+const labelWin = "text-sm font-semibold text-black";
 
-  useEffect(() => {
-    const interval = setInterval(() => setClock(new Date()), 1000);
-    setFilteredData(data);
-    return () => clearInterval(interval);
-  }, [data]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleView = () => {
-    const result = data.filter((r) => {
-      const itemMatch = !filters.itemName || r.itemName.toLowerCase().includes(filters.itemName.toLowerCase());
-      const partnerMatch = !filters.partner || r.partner.toLowerCase().includes(filters.partner.toLowerCase());
-      const fromMatch = !filters.fromDate || new Date(r.date) >= new Date(filters.fromDate);
-      const toMatch = !filters.toDate || new Date(r.date) <= new Date(filters.toDate);
-      return itemMatch && partnerMatch && fromMatch && toMatch;
-    });
-    setFilteredData(result);
-  };
-
-  const handleClear = () => {
-    setFilters({ itemName: "", partner: "", fromDate: "", toDate: "" });
-    setFilteredData(data);
-  };
-
-  const handleExportCSV = () => {
-    const csvRows = [
-      ["ID", "Date", "Item Name", "Category", "Partner", "Quantity", "Unit"],
-      ...filteredData.map((r) => [r.id, r.date, r.itemName, r.category, r.partner, r.quantity, r.unit]),
-    ];
-    const csvContent = "data:text/csv;charset=utf-8," + csvRows.map((row) => row.join(",")).join("\n");
-    const link = document.createElement("a");
-    link.setAttribute("href", csvContent);
-    link.setAttribute("download", "report.csv");
-    link.click();
-  };
-
-  const handlePrint = () => window.print();
-
-  const chartData = filteredData.map((item) => ({
-    name: item.itemName,
-    quantity: item.quantity,
-  }));
-
-    const [currentTime, setCurrentTime] = useState(new Date());
-
-
-  const formattedTime = currentTime.toLocaleTimeString();
-  const formattedDate = currentTime.toLocaleDateString("en-US", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric",
-  });
-
+function WinTable({ columns, rows }) {
   return (
-    <div className="min-h-screen w-full flex flex-col bg-gray-50 p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8 bg-gradient-to-r from-sky-600 to-sky-400 text-white p-4 rounded-lg shadow">
-        <h1 className="text-2xl font-bold">📊 Reports Dashboard</h1>
-        <div className="text-right text-sm">
-          <p>{formattedDate}</p>
-          <p>{formattedTime}</p>
-        </div>
-      </div>
+    <div className="border border-gray-300 bg-white overflow-x-auto">
+      <table className="w-full min-w-[1200px] text-sm border-collapse">
+        <thead className="bg-sky-300">
+          <tr>
+            {columns.map((c) => (
+              <th
+                key={c.key}
+                className="border border-gray-300 px-3 py-2 text-left font-bold text-black whitespace-nowrap"
+              >
+                {c.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
 
-      {/* Filter + Chart */}
-      <div className="grid lg:grid-cols-2 gap-6 mb-6">
-        {/* Filters */}
-        <div className="bg-white border rounded-xl p-6 shadow-md">
-          <h3 className="text-lg font-semibold mb-4 text-gray-700">Filter Reports</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <input type="text" name="itemName" value={filters.itemName} onChange={handleChange} placeholder="Item Name" className="border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-400 outline-none" />
-            <input type="text" name="partner" value={filters.partner} onChange={handleChange} placeholder="Partner" className="border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-400 outline-none" />
-            <input type="date" name="fromDate" value={filters.fromDate} onChange={handleChange} className="border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-400 outline-none" />
-            <input type="date" name="toDate" value={filters.toDate} onChange={handleChange} className="border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-400 outline-none" />
-          </div>
-          <div className="flex gap-3 mt-6">
-            <button onClick={handleView} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-              <Eye size={16} /> View
-            </button>
-            <button onClick={handleClear} className="flex items-center gap-2 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition">
-              <RefreshCcw size={16} /> Reset
-            </button>
-          </div>
-        </div>
-
-        {/* Chart */}
-        <div className="bg-white border rounded-xl p-6 shadow-md flex items-center justify-center">
-          {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="name" tick={{ fill: "#374151" }} />
-                <YAxis tick={{ fill: "#374151" }} />
-                <Tooltip />
-                <Bar dataKey="quantity" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-gray-500">No data available for chart</p>
-          )}
-        </div>
-      </div>
-
-      {/* View and Actions */}
-      <ReportControls
-        handlePrint={handlePrint}
-        handleExportCSV={handleExportCSV}
-        setShowPreview={setShowPreview}
-      />
-
-      {/* Table */}
-      <div className="overflow-x-auto bg-white rounded-xl shadow-lg border">
-        <table className="w-full border-collapse text-sm">
-          <thead className="bg-blue-600 text-white">
-            <tr>
-              {["ID", "Date", "Item Name", "Category", "Partner", "Quantity", "Unit"].map((h) => (
-                <th key={h} className="border p-3 text-left font-semibold">{h}</th>
+        <tbody>
+          {rows.map((r, idx) => (
+            <tr
+              key={r.auditId ?? idx}
+              className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+            >
+              {columns.map((c) => (
+                <td
+                  key={c.key}
+                  className="border border-gray-200 px-3 py-2 text-black whitespace-nowrap"
+                >
+                  {r[c.key]}
+                </td>
               ))}
             </tr>
-          </thead>
-          <tbody>
-            {filteredData.length > 0 ? (
-              filteredData.map((r, i) => (
-                <tr key={r.id} className={`hover:bg-blue-50 ${i % 2 === 0 ? "bg-gray-50" : "bg-white"}`}>
-                  <td className="border p-3">{r.id}</td>
-                  <td className="border p-3">{r.date}</td>
-                  <td className="border p-3">{r.itemName}</td>
-                  <td className="border p-3">{r.category}</td>
-                  <td className="border p-3">{r.partner}</td>
-                  <td className="border p-3">{r.quantity}</td>
-                  <td className="border p-3">{r.unit}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="7" className="text-center text-gray-500 py-6">No records found.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+          ))}
 
-      {/* Preview Modal */}
-      {showPreview && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white w-3/4 max-h-[90vh] overflow-y-auto rounded-2xl shadow-lg p-6">
-            <h3 className="text-xl font-bold mb-4">📄 Report Preview</h3>
-            <table className="w-full border-collapse text-sm">
-              <thead className="bg-blue-600 text-white">
-                <tr>
-                  {["ID", "Date", "Item Name", "Category", "Partner", "Quantity", "Unit"].map((h) => (
-                    <th key={h} className="border p-2">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredData.map((r, i) => (
-                  <tr key={r.id} className={`${i % 2 === 0 ? "bg-gray-50" : "bg-white"}`}>
-                    <td className="border p-2">{r.id}</td>
-                    <td className="border p-2">{r.date}</td>
-                    <td className="border p-2">{r.itemName}</td>
-                    <td className="border p-2">{r.category}</td>
-                    <td className="border p-2">{r.partner}</td>
-                    <td className="border p-2">{r.quantity}</td>
-                    <td className="border p-2">{r.unit}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="mt-4 flex justify-end gap-3">
-              <button onClick={handlePrint} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Print</button>
-              <button onClick={() => setShowPreview(false)} className="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500">Close</button>
-            </div>
-          </div>
-        </div>
-      )}
+          {rows.length === 0 && (
+            <tr>
+              <td
+                colSpan={columns.length}
+                className="border border-gray-200 px-3 py-6 text-center text-gray-500"
+              >
+                No records found.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-// ✅ Moved Below as a Separate Component
-const ReportControls = ({ handlePrint, handleExportCSV, setShowPreview }) => {
-  const [viewType, setViewType] = useState("monthly");
-  const [selectedMonth, setSelectedMonth] = useState("January");
-  const [selectedYear, setSelectedYear] = useState("2025");
+export default function Reports() {
+  // Live date/time
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
-  const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
-  const years = ["2025", "2024", "2023", "2022", "2021", "2020"];
+  const formattedTime = now.toLocaleTimeString();
+  const formattedDate = now.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  // Report details (left box)
+  const [reportType, setReportType] = useState("Dispatch Report");
+  const [itemName, setItemName] = useState("");
+  const [partner, setPartner] = useState("");
+  const [fromDate, setFromDate] = useState("2026-01-09");
+  const [toDate, setToDate] = useState("2026-01-09");
+
+  // Lower controls (like screenshot)
+  const [monthly, setMonthly] = useState("January");
+  const [yearly, setYearly] = useState("2026");
+  const [auditType, setAuditType] = useState("Dispatched Audit Report");
+
+  // Chart data (matches screenshot idea: SPMs + TPMs by partner)
+  const fullChartData = useMemo(
+    () => [
+      { partner: "AEDC", spms: 500, tpms: 1500 },
+      { partner: "BEDC", spms: 1000, tpms: 400 },
+      { partner: "EKEDC", spms: 1200, tpms: 1000 },
+      { partner: "IBEDC", spms: 2600, tpms: 1700 },
+    ],
+    [],
+  );
+
+  const [chartData, setChartData] = useState(fullChartData);
+
+  // Audit table data (bottom grid)
+  const [auditRows, setAuditRows] = useState([
+    {
+      auditId: 34,
+      type: "Coupled → Dispatch",
+      auditDate: "1/17/2026 12:00 AM",
+      userName: "Victor",
+      action: "Dispatch",
+      quantityRequested: 300,
+      partner: "BEDC",
+      quantityUsed: 100,
+      itemNames: "Three Phase Meter ...",
+    },
+    {
+      auditId: 33,
+      type: "Coupled → Dispatch",
+      auditDate: "1/17/2026 12:00 AM",
+      userName: "Victor",
+      action: "Dispatch",
+      quantityRequested: 300,
+      partner: "BEDC",
+      quantityUsed: 200,
+      itemNames: "Single Phase Meter ...",
+    },
+    {
+      auditId: 32,
+      type: "Coupled → Dispatch",
+      auditDate: "1/15/2026 9:36 PM",
+      userName: "Ekeobong",
+      action: "Dispatch",
+      quantityRequested: 300,
+      partner: "EKEDC",
+      quantityUsed: 100,
+      itemNames: "Three Phase Meter ...",
+    },
+    {
+      auditId: 31,
+      type: "Coupled → Dispatch",
+      auditDate: "1/15/2026 9:36 PM",
+      userName: "Ekeobong",
+      action: "Dispatch",
+      quantityRequested: 300,
+      partner: "EKEDC",
+      quantityUsed: 200,
+      itemNames: "Single Phase Meter ...",
+    },
+    {
+      auditId: 30,
+      type: "Coupled → Dispatch",
+      auditDate: "1/15/2026 8:59 PM",
+      userName: "Samuel",
+      action: "Dispatch",
+      quantityRequested: 300,
+      partner: "IBEDC",
+      quantityUsed: 100,
+      itemNames: "Three Phase Meter ...",
+    },
+    {
+      auditId: 29,
+      type: "Coupled → Dispatch",
+      auditDate: "1/15/2026 8:59 PM",
+      userName: "Samuel",
+      action: "Dispatch",
+      quantityRequested: 300,
+      partner: "IBEDC",
+      quantityUsed: 200,
+      itemNames: "Single Phase Meter ...",
+    },
+    {
+      auditId: 28,
+      type: "Coupled → Dispatch",
+      auditDate: "1/15/2026 8:54 PM",
+      userName: "qwerty",
+      action: "Dispatch",
+      quantityRequested: 300,
+      partner: "BEDC",
+      quantityUsed: 100,
+      itemNames: "Three Phase Meter ...",
+    },
+    {
+      auditId: 27,
+      type: "Coupled → Dispatch",
+      auditDate: "1/15/2026 8:54 PM",
+      userName: "qwerty",
+      action: "Dispatch",
+      quantityRequested: 300,
+      partner: "BEDC",
+      quantityUsed: 200,
+      itemNames: "Single Phase Meter ...",
+    },
+  ]);
+
+  const auditCols = useMemo(
+    () => [
+      { key: "auditId", label: "AuditId" },
+      { key: "type", label: "Type" },
+      { key: "auditDate", label: "AuditDate" },
+      { key: "userName", label: "UserName" },
+      { key: "action", label: "Action" },
+      { key: "quantityRequested", label: "QuantityRequested" },
+      { key: "partner", label: "Partner" },
+      { key: "quantityUsed", label: "QuantityUsed" },
+      { key: "itemNames", label: "ItemNames" },
+    ],
+    [],
+  );
+
+  // Actions (View/Clear mimic)
+  const handleView = () => {
+    // For clone purposes, keep it simple: optionally filter by partner
+    const p = partner.trim().toUpperCase();
+    if (!p) {
+      setChartData(fullChartData);
+      return;
+    }
+    setChartData(fullChartData.filter((x) => x.partner.includes(p)));
+  };
+
+  const handleClear = () => {
+    setReportType("Dispatch Report");
+    setItemName("");
+    setPartner("");
+    setFromDate("2026-01-09");
+    setToDate("2026-01-09");
+    setChartData(fullChartData);
+  };
+
+  const handleExportCSV = () => {
+    const header = auditCols.map((c) => c.label);
+    const rows = auditRows.map((r) => auditCols.map((c) => r[c.key]));
+    const csv = [header, ...rows].map((row) => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "audit_report.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrint = () => window.print();
 
   return (
-    <div className="flex flex-wrap items-center gap-3 mb-6">
-      <button
-        onClick={() => setShowPreview(true)}
-        className="flex items-center gap-2 bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition"
-      >
-        <Eye size={16} /> Preview
-      </button>
+    <div className="min-h-screen bg-white text-black">
+      {/* Header strip (like screenshots) */}
+      <header className="bg-sky-300 border-b border-gray-300">
+        <div className="max-w-[1500px] mx-auto px-4 py-4 flex items-center">
+          <div className="flex-1 text-center">
+            <h1 className="text-4xl font-extrabold">Reports</h1>
+          </div>
 
-      <button
-        onClick={handlePrint}
-        className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
-      >
-        <Printer size={16} /> Print
-      </button>
+          <div className="text-right text-sm font-semibold">
+            <div>
+              <span className="font-extrabold">Today :</span> {formattedDate}
+            </div>
+            <div>{formattedTime}</div>
+          </div>
+        </div>
+      </header>
 
-      <button
-        onClick={handleExportCSV}
-        className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
-      >
-        <FileDown size={16} /> Export CSV
-      </button>
+      <main className="max-w-[1600px] mx-auto px-4 py-5">
+        {/* Top: left details + right chart */}
+        <div className="grid grid-cols-12 gap-6">
+          {/* Report Details (left) */}
+          <section className="col-span-12 lg:col-span-7">
+            <div className="border border-gray-300 rounded-xl overflow-hidden bg-gray-50">
+              {/* blue title strip */}
+              <div className="bg-sky-300 px-5 py-4 font-bold text-xl">
+                Report Details
+              </div>
 
-      {/* View Selector */}
-      <div className="flex items-center gap-2 ml-auto">
-        <label className="text-gray-700 font-medium">View:</label>
-        <select
-          value={viewType}
-          onChange={(e) => setViewType(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-        >
-          <option value="monthly">Monthly</option>
-          <option value="yearly">Yearly</option>
-        </select>
+              <div className="p-5 grid grid-cols-2 gap-x-8 gap-y-5">
+                {/* Report Type */}
+                <div>
+                  <div className={labelWin}>Report Type</div>
+                  <select
+                    className={selectWin}
+                    value={reportType}
+                    onChange={(e) => setReportType(e.target.value)}
+                  >
+                    <option>Dispatch Report</option>
+                    <option>Arrival Report</option>
+                    <option>Stock Report</option>
+                  </select>
+                </div>
 
-        {viewType === "monthly" && (
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                {/* Item Name */}
+                <div>
+                  <div className={labelWin}>Item Name</div>
+                  <select
+                    className={selectWin}
+                    value={itemName}
+                    onChange={(e) => setItemName(e.target.value)}
+                  >
+                    <option value="">(select)</option>
+                    <option value="Single Phase Meter">
+                      Single Phase Meter
+                    </option>
+                    <option value="Three Phase Meter">Three Phase Meter</option>
+                    <option value="Meter Base">Meter Base</option>
+                  </select>
+                </div>
+
+                {/* Partner */}
+                <div>
+                  <div className={labelWin}>Partner</div>
+                  <select
+                    className={selectWin}
+                    value={partner}
+                    onChange={(e) => setPartner(e.target.value)}
+                  >
+                    <option value="">(select)</option>
+                    <option value="AEDC">AEDC</option>
+                    <option value="BEDC">BEDC</option>
+                    <option value="EKEDC">EKEDC</option>
+                    <option value="IBEDC">IBEDC</option>
+                  </select>
+                </div>
+
+                {/* From Date */}
+                <div>
+                  <div className={labelWin}>From Date</div>
+                  <input
+                    type="date"
+                    className={inputWin}
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                  />
+                </div>
+
+                {/* To Date */}
+                <div>
+                  <div className={labelWin}>To Date</div>
+                  <input
+                    type="date"
+                    className={inputWin}
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                  />
+                </div>
+
+                {/* Buttons (View/Clear) aligned right like screenshot */}
+                <div className="col-span-2 flex justify-end gap-4 pt-2">
+                  <button
+                    onClick={handleView}
+                    className="h-12 px-10 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-bold flex items-center gap-2 border border-gray-300 shadow-sm transition"
+                  >
+                    <Eye size={20} />
+                    View
+                  </button>
+
+                  <button
+                    onClick={handleClear}
+                    className="h-12 px-10 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold flex items-center gap-2 border border-gray-300 shadow-sm transition"
+                  >
+                    <RefreshCcw size={20} />
+                    Clear
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Chart (right) */}
+          <section className="col-span-12 lg:col-span-5">
+            <div className="border border-gray-300 rounded-xl bg-white p-4">
+              <div className="text-center font-semibold mb-2">
+                SPM / TPM Dispatch by Partner
+              </div>
+
+              <div className="h-[260px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={chartData}
+                    margin={{ top: 20, right: 15, left: 10, bottom: 10 }}
+                  >
+                    <CartesianGrid strokeDasharray="4 4" />
+                    <XAxis dataKey="partner" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="spms" name="SPMs">
+                      <LabelList dataKey="spms" position="top" />
+                    </Bar>
+                    <Bar dataKey="tpms" name="TPMs">
+                      <LabelList dataKey="tpms" position="top" />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Middle controls row (buttons + view selectors + audit type + main/close) */}
+        <div className="mt-6 flex flex-wrap items-center gap-4">
+          {/* Audit Report button */}
+          <button
+            onClick={handlePrint}
+            className="h-14 px-6 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-bold flex items-center gap-3 border border-gray-300 shadow-sm transition"
           >
-            {months.map((month) => (
-              <option key={month} value={month}>
-                {month}
-              </option>
-            ))}
-          </select>
-        )}
+            <Printer size={22} />
+            Audit Report
+          </button>
 
-        {viewType === "yearly" && (
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          {/* Export CSV button */}
+          <button
+            onClick={handleExportCSV}
+            className="h-14 px-6 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-bold flex items-center gap-3 border border-gray-300 shadow-sm transition"
           >
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
+            <FileDown size={22} />
+            Export to CSV
+          </button>
+
+          {/* View + Monthly + Yearly */}
+          <div className="flex items-center gap-3 ml-3">
+            <div className="font-bold">View :</div>
+
+            <div className="flex items-center gap-3">
+              <div className="font-bold">Monthly</div>
+              <select
+                className="h-10 w-48 border border-gray-300 bg-white px-3 text-sm outline-none"
+                value={monthly}
+                onChange={(e) => setMonthly(e.target.value)}
+              >
+                {[
+                  "January",
+                  "February",
+                  "March",
+                  "April",
+                  "May",
+                  "June",
+                  "July",
+                  "August",
+                  "September",
+                  "October",
+                  "November",
+                  "December",
+                ].map((m) => (
+                  <option key={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-3 ml-6">
+              <div className="font-bold">Yearly</div>
+              <select
+                className="h-10 w-32 border border-gray-300 bg-white px-3 text-sm outline-none"
+                value={yearly}
+                onChange={(e) => setYearly(e.target.value)}
+              >
+                {["2026", "2025", "2024", "2023", "2022"].map((y) => (
+                  <option key={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Audit Type */}
+          <div className="flex items-center gap-3 ml-6">
+            <div className="font-bold">Audit Type</div>
+            <select
+              className="h-10 w-[320px] border border-gray-300 bg-white px-3 text-sm outline-none"
+              value={auditType}
+              onChange={(e) => setAuditType(e.target.value)}
+            >
+              <option>Dispatched Audit Report</option>
+              <option>Coupled Audit Report</option>
+              <option>Arrival Audit Report</option>
+            </select>
+          </div>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Main / Close */}
+          <Link
+            to="/dashboard"
+            className="h-14 px-8 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-bold flex items-center gap-3 border border-gray-300 shadow-sm transition"
+          >
+            <Home size={22} />
+            Main
+          </Link>
+
+          <Link
+            to="/exit"
+            className="h-14 px-8 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold flex items-center gap-3 border border-gray-300 shadow-sm transition"
+          >
+            <X size={22} />
+            Close
+          </Link>
+        </div>
+
+        {/* Bottom audit table */}
+        <div className="mt-4">
+          <WinTable columns={auditCols} rows={auditRows} />
+        </div>
+      </main>
     </div>
-    
   );
-};
+}

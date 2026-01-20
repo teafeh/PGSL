@@ -13,12 +13,11 @@ export default function App() {
   return (
     <DeviceGuard>
       <Router>
-        <div className="flex min-h-screen w-screen overflow-hidden bg-gray-50">
-          {/* Sidebar with fixed width */}
+        <div className="flex h-screen w-screen bg-gray-50 overflow-hidden">
           <Sidebar />
 
-          {/* Main Content Area */}
-          <main className="flex-1 overflow-x-hidden">
+          {/* main scrolls, sidebar stays put */}
+          <main className="flex-1 overflow-y-auto overflow-x-hidden ml-56">
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/dashboard" element={<Dashboard />} />
@@ -26,7 +25,7 @@ export default function App() {
               <Route path="/manage-items" element={<ManageItems />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/exit" element={<Exit />} />
+              <Route path="/" element={<Exit />} />
             </Routes>
           </main>
         </div>
