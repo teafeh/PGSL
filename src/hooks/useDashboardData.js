@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
-const API_BASE = import.meta?.env?.VITE_API_BASE_URL || "http://localhost:3000";
+const API_BASE =
+  import.meta?.env?.VITE_API_BASE_URL || "https://backend-pgsl.vercel.app";
 
 // helper: groups [{Category, ItemName, Quantity}] → ItemsTree format
 function groupItemsToTree(rows) {
