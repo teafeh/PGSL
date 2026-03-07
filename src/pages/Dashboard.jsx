@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useDashboardData } from "../hooks/useDashboardData";
 
 function cx(...classes) {
   return classes.filter(Boolean).join(" ");
 }
+
 
 function Card({ title, right = null, children, className = "" }) {
   return (
@@ -40,7 +42,7 @@ function StatTile({ title, value, tone }) {
       )}
     >
       <div className="text-sm font-semibold text-black">{title}</div>
-      <div className="mt-2 text-3xl font-extrabold text-black">{value}</div>
+      <div className="mt-2 text-xl font-extrabold text-black">{value}</div>
     </div>
   );
 }
@@ -148,6 +150,29 @@ function ItemsTree({ data }) {
 }
 
 export default function Dashboard() {
+
+  const {
+    loading,
+    error,
+
+    rawMaterials,
+    finishedGoods,
+    stats,
+    meters,
+    partners,
+
+    filteredStore,
+    filteredDist,
+    filteredAvail,
+
+    storeFilter,
+    setStoreFilter,
+    distFilter,
+    setDistFilter,
+    availFilter,
+    setAvailFilter,
+  } = useDashboardData({ storeId: 1 });
+
   // Live date/time
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -163,66 +188,7 @@ export default function Dashboard() {
     day: "numeric",
   });
 
-  const [storeFilter, setStoreFilter] = useState("");
-  const [distFilter, setDistFilter] = useState("");
-  const [availFilter, setAvailFilter] = useState("");
 
-  // Data (same idea as the screenshot)
-  const itemsTree = useMemo(
-    () => [
-      {
-        category: "Battery",
-        items: [
-          { name: "Meter Battery", qty: 2500 },
-          { name: "Solar Tubular Battery", qty: 150 },
-          { name: "Trailer Battery", qty: 80 },
-        ],
-      },
-      {
-        category: "Breaker",
-        items: [
-          { name: "Breaker 100/5", qty: 0 },
-          { name: "Breaker 200/5", qty: 0 },
-          { name: "Breaker 300/5", qty: 0 },
-          { name: "Breaker 500/5", qty: 0 },
-          { name: "Breaker 800/5", qty: 500 },
-          { name: "Breaker Single Phase", qty: 0 },
-          { name: "Breaker Three Phase", qty: 0 },
-        ],
-      },
-      {
-        category: "Cable",
-        items: [
-          { name: "Armoured Cable", qty: 100 },
-          { name: "Recline Cable", qty: 0 },
-        ],
-      },
-    ],
-    [],
-  );
-
-  const stats = useMemo(
-    () => [
-      { title: "Total No of SPMs", value: "0", tone: "red" },
-      { title: "Total No of TPMs", value: "800", tone: "yellow" },
-      { title: "Total No of CIUs", value: "400", tone: "yellow" },
-      { title: "Total No of Meter Boxes", value: "1,500", tone: "green" },
-    ],
-    [],
-  );
-
-  const meters = useMemo(
-    () => ({
-      totalCoupled: 0,
-      totalSent: 5300,
-      spms: 0,
-      tpms: 800,
-      cius: 0,
-      sentTpms: 4600,
-      sentCius: 0,
-    }),
-    [],
-  );
 
   const storeColumns = useMemo(
     () => [
@@ -238,61 +204,6 @@ export default function Dashboard() {
     [],
   );
 
-  const storeRows = useMemo(
-    () => [
-      {
-        id: 1,
-        type: "Taken (Out)",
-        itemName: "Meter Base",
-        category: "Meter Base",
-        quantity: 10,
-        unit: "Pieces",
-        date: "12/27/2025",
-        remarks: "Moved",
-      },
-      {
-        id: 2,
-        type: "Arrival (In)",
-        itemName: "Meter Base",
-        category: "Meter Base",
-        quantity: 100,
-        unit: "Pieces",
-        date: "12/27/2025",
-        remarks: "Stock Complete",
-      },
-      {
-        id: 3,
-        type: "Arrival (In)",
-        itemName: "Meter Base",
-        category: "Meter Base",
-        quantity: 500,
-        unit: "Pieces",
-        date: "1/2/2026",
-        remarks: "Done",
-      },
-      {
-        id: 4,
-        type: "Taken (Out)",
-        itemName: "Meter Base",
-        category: "Meter Base",
-        quantity: 200,
-        unit: "Pieces",
-        date: "1/2/2026",
-        remarks: "Done",
-      },
-      {
-        id: 5,
-        type: "Arrival (In)",
-        itemName: "Three Phase Meter Box",
-        category: "Meter Box",
-        quantity: 500,
-        unit: "Pieces",
-        date: "1/5/2026",
-        remarks: "Arrived",
-      },
-    ],
-    [],
-  );
 
   const bottomColumns = useMemo(
     () => [
@@ -308,123 +219,6 @@ export default function Dashboard() {
     [],
   );
 
-  const distributedRows = useMemo(
-    () => [
-      {
-        id: 1,
-        type: "Dispatch",
-        itemName: "Single Phase Meter",
-        category: "Meter",
-        quantity: 2000,
-        unit: "Pieces",
-        partner: "IBEDC",
-        date: "1/2/2026",
-      },
-      {
-        id: 2,
-        type: "Dispatch",
-        itemName: "Single Phase Meter",
-        category: "Meter",
-        quantity: 600,
-        unit: "Pieces",
-        partner: "BEDC",
-        date: "1/2/2026",
-      },
-      {
-        id: 3,
-        type: "Dispatch",
-        itemName: "Single Phase Meter",
-        category: "Meter",
-        quantity: 300,
-        unit: "Pieces",
-        partner: "EKEDC",
-        date: "1/3/2026",
-      },
-      {
-        id: 4,
-        type: "Dispatch",
-        itemName: "Three Phase Meter",
-        category: "Meter",
-        quantity: 300,
-        unit: "Pieces",
-        partner: "EKEDC",
-        date: "1/3/2026",
-      },
-    ],
-    [],
-  );
-
-  const availableRows = useMemo(
-    () => [
-      {
-        id: 3,
-        type: "Coupled",
-        itemName: "Single Phase Meter",
-        category: "Meter",
-        quantity: 0,
-        unit: "Pieces",
-        partner: "None",
-        date: "12/27/2025",
-      },
-      {
-        id: 4,
-        type: "Coupled",
-        itemName: "Single Phase Meter",
-        category: "Meter",
-        quantity: 0,
-        unit: "Pieces",
-        partner: "None",
-        date: "1/2/2026",
-      },
-      {
-        id: 5,
-        type: "Coupled",
-        itemName: "Three Phase Meter",
-        category: "Meter",
-        quantity: 0,
-        unit: "Pieces",
-        partner: "None",
-        date: "1/2/2026",
-      },
-    ],
-    [],
-  );
-
-  const partners = useMemo(
-    () => [
-      { name: "AEDC", qty: 2000, bg: "from-green-300 to-green-100" },
-      { name: "BEDC", qty: 1400, bg: "from-orange-300 to-orange-100" },
-      { name: "EKEDC", qty: 2200, bg: "from-yellow-200 to-yellow-50" },
-      { name: "IBEDC", qty: 4300, bg: "from-cyan-300 to-cyan-100" },
-    ],
-    [],
-  );
-
-  // Filtering
-  const filteredStore = useMemo(() => {
-    if (!storeFilter.trim()) return storeRows;
-    const q = storeFilter.toLowerCase();
-    return storeRows.filter((r) =>
-      Object.values(r).some((v) => String(v).toLowerCase().includes(q)),
-    );
-  }, [storeFilter, storeRows]);
-
-  const filteredDist = useMemo(() => {
-    if (!distFilter.trim()) return distributedRows;
-    const q = distFilter.toLowerCase();
-    return distributedRows.filter((r) =>
-      Object.values(r).some((v) => String(v).toLowerCase().includes(q)),
-    );
-  }, [distFilter, distributedRows]);
-
-  const filteredAvail = useMemo(() => {
-    if (!availFilter.trim()) return availableRows;
-    const q = availFilter.toLowerCase();
-    return availableRows.filter((r) =>
-      Object.values(r).some((v) => String(v).toLowerCase().includes(q)),
-    );
-  }, [availFilter, availableRows]);
-
   return (
     // Page scrolls (spacious)
     <div className="min-h-screen bg-gray-50 text-black">
@@ -432,7 +226,7 @@ export default function Dashboard() {
       <header className="bg-sky-300 border-b border-gray-200">
         <div className="max-w-[1500px] mx-auto px-4 py-4 flex items-center">
           <div className="flex-1 text-center">
-            <h1 className="text-4xl font-extrabold">Warehouse DashBoard</h1>
+            <h1 className="text-2xl font-extrabold">Metering DashBoard</h1>
           </div>
 
           <div className="text-right text-sm font-semibold">
@@ -446,103 +240,145 @@ export default function Dashboard() {
 
       <main className="max-w-[1400px] mx-auto px-6 py-8 space-y-8">
         {/* Top row */}
+
+        {error && (
+          <div className="mb-4 p-3 rounded-xl border border-red-200 bg-red-50 text-sm">
+            {error}
+          </div>
+        )}
+
+        {loading && (
+          <div className="mb-4 p-3 rounded-xl border border-gray-200 bg-white text-sm">
+            Loading dashboard...
+          </div>
+        )}
+
         <div className="grid grid-cols-12 gap-6">
           {/* Items in Store */}
           <Card title="Items in Store" className="col-span-12 lg:col-span-3">
-            <ItemsTree data={itemsTree} />
+            <div className="space-y-6 max-h-[800px] overflow-y-auto p-4">
+              {/* Raw Materials */}
+              <div>
+                <h3 className="text-sm font-bold text-sky-700 mb-2">
+                  Raw Materials
+                </h3>
+                <ItemsTree data={rawMaterials} />
+              </div>
+
+              <hr className="my-4 border-gray-300" />
+
+              {/* Finished Goods */}
+              <div>
+                <h3 className="text-sm font-bold text-sky-700 mb-2">
+                  Finished Goods
+                </h3>
+                <ItemsTree data={finishedGoods} />
+              </div>
+            </div>
           </Card>
 
           {/* Stats + legend */}
-          <div className="col-span-12 lg:col-span-6 space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {stats.map((s) => (
-                <StatTile
-                  key={s.title}
-                  title={s.title}
-                  value={s.value}
-                  tone={s.tone}
-                />
-              ))}
+          <div className="col-span-12 lg:col-span-9 space-y-6">
+            <div className="flex gap-4 w-full">
+              {/* 80% Section */}
+              <div className="w-4/5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {stats.map((s) => (
+                    <StatTile
+                      key={s.title}
+                      title={s.title}
+                      value={s.value}
+                      tone={s.tone}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* 20% Section */}
+              <Card title="Stock Legend" className="w-1/5">
+                <Legend />
+              </Card>
             </div>
 
-            <Card title="Stock Legend">
-              <Legend />
-            </Card>
+            <div className="flex gap-4 w-full">
+              <Card title="Meters" className="w-3/5">
+                <div className="grid grid-cols-3 gap-y-3 text-sm">
+                  <div />
+                  <div className="font-bold text-center">Total Coupled</div>
+                  <div className="font-bold text-center">Total Sent</div>
 
-            <Card
-              title="Store Items Table"
-              right={
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold">Filter By:</span>
-                  <TextInput value={storeFilter} onChange={setStoreFilter} />
+                  <div className="font-bold">SPMs :</div>
+                  <div className="text-center">{meters.totalCoupled}</div>
+                  <div className="text-center">{meters.totalSent}</div>
+
+                  <div className="font-bold">TPMs :</div>
+                  <div className="text-center">{meters.tpms}</div>
+                  <div className="text-center">{meters.sentTpms}</div>
+
+                  <div className="font-bold">CIUs :</div>
+                  <div className="text-center">{meters.cius}</div>
+                  <div className="text-center">{meters.sentCius}</div>
                 </div>
-              }
-            >
-              <Table columns={storeColumns} rows={filteredStore} />
-            </Card>
-          </div>
+              </Card>
 
-          {/* Right column */}
-          <div className="col-span-12 lg:col-span-3 space-y-6">
-            <Card title="Meters">
-              <div className="grid grid-cols-3 gap-y-3 text-sm">
-                <div />
-                <div className="font-bold text-center">Total Coupled</div>
-                <div className="font-bold text-center">Total Sent</div>
-
-                <div className="font-bold">SPMs :</div>
-                <div className="text-center">{meters.totalCoupled}</div>
-                <div className="text-center">{meters.totalSent}</div>
-
-                <div className="font-bold">TPMs :</div>
-                <div className="text-center">{meters.tpms}</div>
-                <div className="text-center">{meters.sentTpms}</div>
-
-                <div className="font-bold">CIUs :</div>
-                <div className="text-center">{meters.cius}</div>
-                <div className="text-center">{meters.sentCius}</div>
-              </div>
-            </Card>
-
-            <Card title="Definitions">
-              <div className="grid grid-cols-2 gap-x-6 text-xs font-bold text-green-700 leading-6">
-                <div>
-                  <div>PCBs: Printed Circuit Board</div>
-                  <div>TTB: Test Terminal Board</div>
-                  <div>CT: Current Transformer</div>
-                </div>
-                <div>
-                  <div>CIUs: Customer Interface Units</div>
-                  <div>SPMs: Single Phase Meters</div>
-                  <div>TPMs: Three Phase Meters</div>
-                </div>
-              </div>
-            </Card>
-
-            <Card title="Total No Of Meters Distributed To Our Partners">
-              <div className="grid grid-cols-2 gap-4">
-                {partners.map((p) => (
-                  <div
-                    key={p.name}
-                    className={cx(
-                      "rounded-full p-4 border border-gray-200 bg-gradient-to-r",
-                      p.bg,
-                    )}
-                  >
-                    <div className="font-extrabold text-lg">{p.name}</div>
-                    <div className="font-bold text-right">{p.qty}</div>
+              <Card title="Definitions" className="w-2/5">
+                <div className="grid grid-cols-2 gap-x-6 text-xs font-bold text-green-700 leading-6">
+                  <div>
+                    <div>PCBs: Printed Circuit Board</div>
+                    <div>TTB: Test Terminal Board</div>
+                    <div>CT: Current Transformer</div>
                   </div>
-                ))}
-              </div>
-            </Card>
+                  <div>
+                    <div>CIUs: Customer Interface Units</div>
+                    <div>SPMs: Single Phase Meters</div>
+                    <div>TPMs: Three Phase Meters</div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+            <div>
+              <Card
+                title="Faulty Items Table"
+                className="col-span-12 lg:col-span-9"
+                right={
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold">Filter By:</span>
+                    <TextInput value={storeFilter} onChange={setStoreFilter} />
+                  </div>
+                }
+              >
+                <Table columns={storeColumns} rows={filteredStore} />
+              </Card>
+            </div>
           </div>
         </div>
 
-        {/* Bottom tables */}
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-12 gap-6 w-full">
+          {/* 20% */}
+          <Card
+            title="Total Meters Distributed"
+            className="col-span-12 lg:col-span-3"
+          >
+            <div className="grid grid-cols-2 gap-4">
+              {partners.map((p) => (
+                <div
+                  key={p.name}
+                  className={cx(
+                    "rounded-xl p-4 border border-gray-200 bg-gradient-to-r",
+                    p.bg,
+                  )}
+                >
+                  <div className="font-extrabold text-lg">{p.name}</div>
+                  <div className="font-bold text-right">{p.qty}</div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* 80% */}
           <Card
             title="Meter Distributed"
-            className="col-span-12 lg:col-span-6"
+            className="col-span-12 lg:col-span-9"
             right={
               <div className="flex items-center gap-3">
                 <span className="text-sm font-semibold">Filter By:</span>
@@ -552,10 +388,13 @@ export default function Dashboard() {
           >
             <Table columns={bottomColumns} rows={filteredDist} />
           </Card>
+        </div>
 
+        {/* Bottom tables */}
+        <div className="grid grid-cols-12 gap-6">
           <Card
             title="Meter Available (Coupled)"
-            className="col-span-12 lg:col-span-6"
+            className="col-span-12"
             right={
               <div className="flex items-center gap-3">
                 <span className="text-sm font-semibold">Filter By:</span>
@@ -566,18 +405,6 @@ export default function Dashboard() {
             <Table columns={bottomColumns} rows={filteredAvail} />
           </Card>
         </div>
-
-        {/* Buttons + squares */}
-        <Card title="" className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              to="/"
-              className="rounded-2xl bg-red-400/70 hover:bg-red-400 px-8 py-3 font-extrabold border border-gray-200 transition"
-            >
-              ✖ Close
-            </Link>
-          </div>
-        </Card>
       </main>
     </div>
   );
