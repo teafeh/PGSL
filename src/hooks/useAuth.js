@@ -4,7 +4,7 @@ const useAuth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const API_URL = "http://localhost:3000/api/auth";
+  const API_URL = "https://backend-pgsl.vercel.app/api/auth";
 
   const handleAuth = async (type, formData) => {
     setLoading(true);

@@ -8,9 +8,9 @@ export const useTransactions = ({ storeId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const BASE_URL = "http://localhost:3000/api/transactions";
+  const BASE_URL = "https://backend-pgsl.vercel.app/api/transactions";
   const MASTER_URL =
-    "http://localhost:3000/api/dashboard/items-quantity?storeId=1&goodsType=Raw%20Materials";
+    "https://backend-pgsl.vercel.app/api/dashboard/items-quantity?storeId=1&goodsType=Raw%20Materials";
 
   const fetchMasterData = async () => {
     try {
