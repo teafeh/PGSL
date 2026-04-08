@@ -35,12 +35,15 @@ function WinTable({ columns, rows }) {
             ))}
           </tr>
         </thead>
-
         <tbody>
           {rows.map((r, idx) => (
             <tr
               key={r.auditId ?? idx}
-              className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+              className={
+                idx % 2 === 0
+                  ? "bg-white"
+                  : "bg-gray-50 hover:bg-sky-50 transition-colors"
+              }
             >
               {columns.map((c) => (
                 <td
@@ -52,14 +55,13 @@ function WinTable({ columns, rows }) {
               ))}
             </tr>
           ))}
-
           {rows.length === 0 && (
             <tr>
               <td
                 colSpan={columns.length}
-                className="border border-gray-200 px-3 py-6 text-center text-gray-500"
+                className="border border-gray-200 px-3 py-10 text-center text-gray-500 font-medium"
               >
-                No records found.
+                No records found for the selected filters.
               </td>
             </tr>
           )}
@@ -70,7 +72,6 @@ function WinTable({ columns, rows }) {
 }
 
 export default function Reports() {
-  // Live date/time
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -85,19 +86,19 @@ export default function Reports() {
     day: "numeric",
   });
 
-  // Report details (left box)
+  // Controls
   const [reportType, setReportType] = useState("Dispatch Report");
   const [itemName, setItemName] = useState("");
   const [partner, setPartner] = useState("");
   const [fromDate, setFromDate] = useState("2026-01-09");
   const [toDate, setToDate] = useState("2026-01-09");
 
-  // Lower controls (like screenshot)
+  // Filter States
+  const [showAuditType, setShowAuditType] = useState(false);
   const [monthly, setMonthly] = useState("January");
   const [yearly, setYearly] = useState("2026");
   const [auditType, setAuditType] = useState("Dispatched Audit Report");
 
-  // Chart data (matches screenshot idea: SPMs + TPMs by partner)
   const fullChartData = useMemo(
     () => [
       { partner: "AEDC", spms: 500, tpms: 1500 },
@@ -110,11 +111,11 @@ export default function Reports() {
 
   const [chartData, setChartData] = useState(fullChartData);
 
-  // Audit table data (bottom grid)
-  const [auditRows, setAuditRows] = useState([
+  // Raw Audit Data
+  const initialAuditRows = [
     {
       auditId: 34,
-      type: "Coupled → Dispatch",
+      type: "Dispatched Audit Report",
       auditDate: "1/17/2026 12:00 AM",
       userName: "Victor",
       action: "Dispatch",
@@ -125,7 +126,7 @@ export default function Reports() {
     },
     {
       auditId: 33,
-      type: "Coupled → Dispatch",
+      type: "Dispatched Audit Report",
       auditDate: "1/17/2026 12:00 AM",
       userName: "Victor",
       action: "Dispatch",
@@ -136,7 +137,7 @@ export default function Reports() {
     },
     {
       auditId: 32,
-      type: "Coupled → Dispatch",
+      type: "Coupled Audit Report",
       auditDate: "1/15/2026 9:36 PM",
       userName: "Ekeobong",
       action: "Dispatch",
@@ -147,8 +148,8 @@ export default function Reports() {
     },
     {
       auditId: 31,
-      type: "Coupled → Dispatch",
-      auditDate: "1/15/2026 9:36 PM",
+      type: "Arrival Audit Report",
+      auditDate: "2/15/2026 9:36 PM",
       userName: "Ekeobong",
       action: "Dispatch",
       quantityRequested: 300,
@@ -158,7 +159,7 @@ export default function Reports() {
     },
     {
       auditId: 30,
-      type: "Coupled → Dispatch",
+      type: "Dispatched Audit Report",
       auditDate: "1/15/2026 8:59 PM",
       userName: "Samuel",
       action: "Dispatch",
@@ -167,40 +168,34 @@ export default function Reports() {
       quantityUsed: 100,
       itemNames: "Three Phase Meter ...",
     },
-    {
-      auditId: 29,
-      type: "Coupled → Dispatch",
-      auditDate: "1/15/2026 8:59 PM",
-      userName: "Samuel",
-      action: "Dispatch",
-      quantityRequested: 300,
-      partner: "IBEDC",
-      quantityUsed: 200,
-      itemNames: "Single Phase Meter ...",
-    },
-    {
-      auditId: 28,
-      type: "Coupled → Dispatch",
-      auditDate: "1/15/2026 8:54 PM",
-      userName: "qwerty",
-      action: "Dispatch",
-      quantityRequested: 300,
-      partner: "BEDC",
-      quantityUsed: 100,
-      itemNames: "Three Phase Meter ...",
-    },
-    {
-      auditId: 27,
-      type: "Coupled → Dispatch",
-      auditDate: "1/15/2026 8:54 PM",
-      userName: "qwerty",
-      action: "Dispatch",
-      quantityRequested: 300,
-      partner: "BEDC",
-      quantityUsed: 200,
-      itemNames: "Single Phase Meter ...",
-    },
-  ]);
+  ];
+
+  // Filtering Logic
+  const filteredAuditRows = useMemo(() => {
+    return initialAuditRows.filter((row) => {
+      const date = new Date(row.auditDate);
+      const monthNames = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
+
+      const matchMonth = monthNames[date.getMonth()] === monthly;
+      const matchYear = date.getFullYear().toString() === yearly;
+      const matchType = row.type === auditType;
+
+      return matchMonth && matchYear && matchType;
+    });
+  }, [monthly, yearly, auditType]);
 
   const auditCols = useMemo(
     () => [
@@ -217,9 +212,7 @@ export default function Reports() {
     [],
   );
 
-  // Actions (View/Clear mimic)
   const handleView = () => {
-    // For clone purposes, keep it simple: optionally filter by partner
     const p = partner.trim().toUpperCase();
     if (!p) {
       setChartData(fullChartData);
@@ -239,28 +232,24 @@ export default function Reports() {
 
   const handleExportCSV = () => {
     const header = auditCols.map((c) => c.label);
-    const rows = auditRows.map((r) => auditCols.map((c) => r[c.key]));
+    const rows = filteredAuditRows.map((r) => auditCols.map((c) => r[c.key]));
     const csv = [header, ...rows].map((row) => row.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "audit_report.csv";
+    a.download = `Audit_Report_${monthly}_${yearly}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const handlePrint = () => window.print();
-
   return (
     <div className="min-h-screen bg-white text-black">
-      {/* Header strip (like screenshots) */}
       <header className="bg-sky-300 border-b border-gray-300">
         <div className="max-w-[1500px] mx-auto px-4 py-4 flex items-center">
           <div className="flex-1 text-center">
             <h1 className="text-4xl font-extrabold">Reports</h1>
           </div>
-
           <div className="text-right text-sm font-semibold">
             <div>
               <span className="font-extrabold">Today :</span> {formattedDate}
@@ -271,18 +260,14 @@ export default function Reports() {
       </header>
 
       <main className="max-w-[1600px] mx-auto px-4 py-5">
-        {/* Top: left details + right chart */}
         <div className="grid grid-cols-12 gap-6">
-          {/* Report Details (left) */}
+          {/* Report Details */}
           <section className="col-span-12 lg:col-span-7">
             <div className="border border-gray-300 rounded-xl overflow-hidden bg-gray-50">
-              {/* blue title strip */}
               <div className="bg-sky-300 px-5 py-4 font-bold text-xl">
                 Report Details
               </div>
-
               <div className="p-5 grid grid-cols-2 gap-x-8 gap-y-5">
-                {/* Report Type */}
                 <div>
                   <div className={labelWin}>Report Type</div>
                   <select
@@ -295,8 +280,6 @@ export default function Reports() {
                     <option>Stock Report</option>
                   </select>
                 </div>
-
-                {/* Item Name */}
                 <div>
                   <div className={labelWin}>Item Name</div>
                   <select
@@ -309,11 +292,8 @@ export default function Reports() {
                       Single Phase Meter
                     </option>
                     <option value="Three Phase Meter">Three Phase Meter</option>
-                    <option value="Meter Base">Meter Base</option>
                   </select>
                 </div>
-
-                {/* Partner */}
                 <div>
                   <div className={labelWin}>Partner</div>
                   <select
@@ -328,73 +308,76 @@ export default function Reports() {
                     <option value="IBEDC">IBEDC</option>
                   </select>
                 </div>
-
-                {/* From Date */}
-                <div>
-                  <div className={labelWin}>From Date</div>
-                  <input
-                    type="date"
-                    className={inputWin}
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className={labelWin}>From Date</div>
+                    <input
+                      type="date"
+                      className={inputWin}
+                      value={fromDate}
+                      onChange={(e) => setFromDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <div className={labelWin}>To Date</div>
+                    <input
+                      type="date"
+                      className={inputWin}
+                      value={toDate}
+                      onChange={(e) => setToDate(e.target.value)}
+                    />
+                  </div>
                 </div>
-
-                {/* To Date */}
-                <div>
-                  <div className={labelWin}>To Date</div>
-                  <input
-                    type="date"
-                    className={inputWin}
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
-                  />
-                </div>
-
-                {/* Buttons (View/Clear) aligned right like screenshot */}
                 <div className="col-span-2 flex justify-end gap-4 pt-2">
                   <button
                     onClick={handleView}
-                    className="h-12 px-10 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-bold flex items-center gap-2 border border-gray-300 shadow-sm transition"
+                    className="h-12 px-10 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-bold flex items-center gap-2 shadow-sm transition"
                   >
-                    <Eye size={20} />
-                    View
+                    <Eye size={20} /> View
                   </button>
-
                   <button
                     onClick={handleClear}
-                    className="h-12 px-10 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold flex items-center gap-2 border border-gray-300 shadow-sm transition"
+                    className="h-12 px-10 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold flex items-center gap-2 shadow-sm transition"
                   >
-                    <RefreshCcw size={20} />
-                    Clear
+                    <RefreshCcw size={20} /> Clear
                   </button>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* Chart (right) */}
+          {/* Chart */}
           <section className="col-span-12 lg:col-span-5">
-            <div className="border border-gray-300 rounded-xl bg-white p-4">
-              <div className="text-center font-semibold mb-2">
+            <div className="border border-gray-300 rounded-xl bg-white p-4 h-full">
+              <div className="text-center font-bold mb-4">
                 SPM / TPM Dispatch by Partner
               </div>
-
-              <div className="h-[260px]">
+              <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={chartData}
-                    margin={{ top: 20, right: 15, left: 10, bottom: 10 }}
-                  >
-                    <CartesianGrid strokeDasharray="4 4" />
-                    <XAxis dataKey="partner" />
-                    <YAxis />
-                    <Tooltip />
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="4 4" vertical={false} />
+                    <XAxis
+                      dataKey="partner"
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis axisLine={false} tickLine={false} />
+                    <Tooltip cursor={{ fill: "#f3f4f6" }} />
                     <Legend />
-                    <Bar dataKey="spms" name="SPMs">
+                    <Bar
+                      dataKey="spms"
+                      fill="#0ea5e9"
+                      name="SPMs"
+                      radius={[4, 4, 0, 0]}
+                    >
                       <LabelList dataKey="spms" position="top" />
                     </Bar>
-                    <Bar dataKey="tpms" name="TPMs">
+                    <Bar
+                      dataKey="tpms"
+                      fill="#22c55e"
+                      name="TPMs"
+                      radius={[4, 4, 0, 0]}
+                    >
                       <LabelList dataKey="tpms" position="top" />
                     </Bar>
                   </BarChart>
@@ -404,34 +387,32 @@ export default function Reports() {
           </section>
         </div>
 
-        {/* Middle controls row (buttons + view selectors + audit type + main/close) */}
-        <div className="mt-6 flex flex-wrap items-center gap-4">
-          {/* Audit Report button */}
-          <button
-            onClick={handlePrint}
-            className="h-14 px-6 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-bold flex items-center gap-3 border border-gray-300 shadow-sm transition"
-          >
-            <Printer size={22} />
-            Audit Report
-          </button>
+        {/* 3 Column Controls Row */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8 items-start bg-gray-50 p-6 rounded-2xl border border-gray-200">
+          {/* Col 1: Audit Report & Export */}
+          <div className="flex flex-col gap-4">
+            <button
+              onClick={() => setShowAuditType(!showAuditType)}
+              className="h-14 px-6 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold flex items-center justify-center gap-3 shadow-md transition w-full"
+            >
+              <Printer size={22} /> Audit Report
+            </button>
+            <button
+              onClick={handleExportCSV}
+              className="h-14 px-6 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold flex items-center justify-center gap-3 shadow-md transition w-full"
+            >
+              <FileDown size={22} /> Export to CSV
+            </button>
+          </div>
 
-          {/* Export CSV button */}
-          <button
-            onClick={handleExportCSV}
-            className="h-14 px-6 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-bold flex items-center gap-3 border border-gray-300 shadow-sm transition"
-          >
-            <FileDown size={22} />
-            Export to CSV
-          </button>
-
-          {/* View + Monthly + Yearly */}
-          <div className="flex items-center gap-3 ml-3">
-            <div className="font-bold">View :</div>
-
-            <div className="flex items-center gap-3">
-              <div className="font-bold">Monthly</div>
+          {/* Col 2: Date Filtering (Monthly & Yearly) */}
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between bg-white p-2 border border-gray-300 rounded-lg shadow-sm">
+              <span className="font-bold text-sm px-2 whitespace-nowrap">
+                View : Monthly
+              </span>
               <select
-                className="h-10 w-48 border border-gray-300 bg-white px-3 text-sm outline-none"
+                className="h-10 w-40 text-sm outline-none bg-transparent"
                 value={monthly}
                 onChange={(e) => setMonthly(e.target.value)}
               >
@@ -453,11 +434,10 @@ export default function Reports() {
                 ))}
               </select>
             </div>
-
-            <div className="flex items-center gap-3 ml-6">
-              <div className="font-bold">Yearly</div>
+            <div className="flex items-center justify-between bg-white p-2 border border-gray-300 rounded-lg shadow-sm">
+              <span className="font-bold text-sm px-2">Yearly</span>
               <select
-                className="h-10 w-32 border border-gray-300 bg-white px-3 text-sm outline-none"
+                className="h-10 w-40 text-sm outline-none bg-transparent"
                 value={yearly}
                 onChange={(e) => setYearly(e.target.value)}
               >
@@ -466,46 +446,53 @@ export default function Reports() {
                 ))}
               </select>
             </div>
+            {/* Conditional Audit Type Input */}
+            {showAuditType && (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <label className="text-xs font-bold text-sky-700 block mb-1">
+                  AUDIT TYPE SELECTION
+                </label>
+                <select
+                  className="h-10 w-full border border-sky-300 bg-sky-50 px-3 text-sm font-semibold rounded-lg outline-none"
+                  value={auditType}
+                  onChange={(e) => setAuditType(e.target.value)}
+                >
+                  <option>Dispatched Audit Report</option>
+                  <option>Coupled Audit Report</option>
+                  <option>Arrival Audit Report</option>
+                </select>
+              </div>
+            )}
           </div>
 
-          {/* Audit Type */}
-          <div className="flex items-center gap-3 ml-6">
-            <div className="font-bold">Audit Type</div>
-            <select
-              className="h-10 w-[320px] border border-gray-300 bg-white px-3 text-sm outline-none"
-              value={auditType}
-              onChange={(e) => setAuditType(e.target.value)}
+          {/* Col 3: Navigation */}
+          <div className="flex flex-col gap-4">
+            <Link
+              to="/dashboard"
+              className="h-14 px-8 rounded-xl bg-sky-100 text-sky-700 hover:bg-sky-200 font-bold flex items-center justify-center gap-3 border border-sky-200 transition w-full"
             >
-              <option>Dispatched Audit Report</option>
-              <option>Coupled Audit Report</option>
-              <option>Arrival Audit Report</option>
-            </select>
+              <Home size={22} /> Main
+            </Link>
+            <Link
+              to="/exit"
+              className="h-14 px-8 rounded-xl bg-red-100 text-red-600 hover:bg-red-200 font-bold flex items-center justify-center gap-3 border border-red-200 transition w-full"
+            >
+              <X size={22} /> Close
+            </Link>
           </div>
-
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* Main / Close */}
-          <Link
-            to="/dashboard"
-            className="h-14 px-8 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-bold flex items-center gap-3 border border-gray-300 shadow-sm transition"
-          >
-            <Home size={22} />
-            Main
-          </Link>
-
-          <Link
-            to="/exit"
-            className="h-14 px-8 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold flex items-center gap-3 border border-gray-300 shadow-sm transition"
-          >
-            <X size={22} />
-            Close
-          </Link>
         </div>
 
-        {/* Bottom audit table */}
-        <div className="mt-4">
-          <WinTable columns={auditCols} rows={auditRows} />
+        {/* Audit table */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-3 px-2">
+            <h3 className="font-bold text-lg text-gray-700">
+              Audit Results: {monthly} {yearly}
+            </h3>
+            <span className="text-sm font-medium text-gray-500">
+              Total Records: {filteredAuditRows.length}
+            </span>
+          </div>
+          <WinTable columns={auditCols} rows={filteredAuditRows} />
         </div>
       </main>
     </div>

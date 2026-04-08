@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, X, Home } from "lucide-react";
+import { useTransactions } from "../hooks/useTransactions";
 
 const inputBase =
-  "w-full h-10 px-3 bg-white border border-gray-300 rounded-md outline-none text-sm text-black focus:ring-2 focus:ring-sky-200";
+  "w-full h-10 px-3 bg-white border border-gray-300 rounded-md outline-none text-sm text-black focus:ring-2 focus:ring-sky-200 disabled:bg-gray-100 disabled:cursor-not-allowed";
 const labelBase = "text-sm font-semibold text-gray-800 mb-1";
 
 function Table({ columns, rows }) {
@@ -51,103 +52,48 @@ function Table({ columns, rows }) {
 }
 
 export default function Transactions() {
+  const CURRENT_STORE_ID = 1;
+
+  const {
+    loading,
+    error,
+    createTransaction,
+    transactionsIn,
+    transactionsOut,
+    masterData, // NEW: Full list from Raw Materials endpoint
+    availableItems, // NEW: Items filtered by selected category from master list
+    filterItemsByCategory, // NEW: Function to filter the master list
+  } = useTransactions({ storeId: CURRENT_STORE_ID });
+
   const [form, setForm] = useState({
     type: "Arrival (In)",
     category: "",
     itemName: "",
-    quantityRemaining: 0, // matches screenshot
+    quantityRemaining: 0,
     quantity: 0,
     unit: "",
     partner: "",
     staff: "",
     date: new Date().toISOString().split("T")[0],
     remarks: "",
+    faultyType: "",
   });
-
-  const [inTransactions, setInTransactions] = useState([
-    {
-      id: 2,
-      itemName: "Meter Base (...)",
-      category: "Meter Base",
-      quantity: 100,
-      unit: "Pieces",
-      staff: "Martins",
-      transaction: "12/27/2025 ...",
-      remarks: "Stock Compl...",
-    },
-    {
-      id: 3,
-      itemName: "Meter Base (...)",
-      category: "Meter Base",
-      quantity: 500,
-      unit: "Pieces",
-      staff: "Dubem",
-      transaction: "1/2/2026 11...",
-      remarks: "Done",
-    },
-    {
-      id: 5,
-      itemName: "Three Phase...",
-      category: "Meter Box",
-      quantity: 500,
-      unit: "Pieces",
-      staff: "Josh",
-      transaction: "1/5/2026 6...",
-      remarks: "Arrived",
-    },
-    {
-      id: 6,
-      itemName: "Breaker 800/5",
-      category: "Breaker",
-      quantity: 500,
-      unit: "Pieces",
-      staff: "",
-      transaction: "1/10/2026 7...",
-      remarks: "No Comments",
-    },
-  ]);
-
-  const [outTransactions, setOutTransactions] = useState([
-    {
-      id: 1,
-      itemName: "Meter Base (...)",
-      category: "Meter Base",
-      quantity: 10,
-      unit: "Pieces",
-      staff: "Martins",
-      transaction: "12/27/2025 ...",
-      remarks: "Moved for pr...",
-    },
-    {
-      id: 4,
-      itemName: "Meter Base (...)",
-      category: "Meter Base",
-      quantity: 200,
-      unit: "Pieces",
-      staff: "Dubem",
-      transaction: "1/2/2026 11...",
-      remarks: "Done",
-    },
-    {
-      id: 7,
-      itemName: "Meter Battery",
-      category: "Battery",
-      quantity: 500,
-      unit: "Pieces",
-      staff: "Martins",
-      transaction: "1/17/2026 1...",
-      remarks: "Taken for pr...",
-    },
-  ]);
 
   const [sortIn, setSortIn] = useState("ItemName, Category, Partner, Date");
   const [sortOut, setSortOut] = useState("ItemName, Category, Partner, Date");
 
   const [currentTime, setCurrentTime] = useState(new Date());
+
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // ✅ Extract all unique categories from the MASTER DATA list
+  const categories = useMemo(() => {
+    const set = new Set(masterData.map((item) => item.Category));
+    return Array.from(set).filter(Boolean).sort();
+  }, [masterData]);
 
   const formattedTime = currentTime.toLocaleTimeString();
   const formattedDate = currentTime.toLocaleDateString("en-US", {
@@ -157,29 +103,59 @@ export default function Transactions() {
     day: "numeric",
   });
 
-  const handleChange = (e) =>
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
 
-  const handleAdd = () => {
-    const id = Date.now();
-    // mimic “in table/out table” display style
-    const row = {
-      id,
-      itemName: form.itemName || "(select item)",
-      category: form.category || "(category)",
-      quantity: Number(form.quantity || 0),
-      unit: form.unit || "(unit)",
-      staff: form.staff || "(staff)",
-      transaction: form.date,
-      remarks: form.remarks || "",
-    };
+    setForm((prev) => ({ ...prev, [name]: value }));
 
-    if (form.type === "Arrival (In)") {
-      setInTransactions((p) => [row, ...p]);
-    } else {
-      setOutTransactions((p) => [row, ...p]);
+    // ✅ When category changes, filter the Master List for items
+    if (name === "category") {
+      filterItemsByCategory(value);
+      setForm((prev) => ({
+        ...prev,
+        category: value,
+        itemName: "",
+        quantityRemaining: 0,
+      }));
     }
-    handleClear();
+
+    // ✅ When Item Name is selected, get quantity from the pre-loaded Master Data
+    if (name === "itemName") {
+      const selectedItem = masterData.find((item) => item.ItemName === value);
+      setForm((prev) => ({
+        ...prev,
+        itemName: value,
+        quantityRemaining: selectedItem ? selectedItem.Quantity : 0,
+      }));
+    }
+  };
+
+  const handleAdd = async () => {
+    if (!form.itemName || form.quantity <= 0) {
+      alert("Please select an item and enter a valid quantity.");
+      return;
+    }
+
+    try {
+      await createTransaction({
+        storeId: CURRENT_STORE_ID,
+        actionType: form.type,
+        itemName: form.itemName,
+        category: form.category, // Pass category to backend
+        quantity: Number(form.quantity),
+        unit: form.unit,
+        staff: form.staff,
+        remarks: form.remarks || "No Comments",
+        partner: form.partner,
+        faultType: form.faultyType,
+        transactionDate: form.date,
+      });
+
+      alert(`${form.type} transaction completed successfully!`);
+      handleClear();
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   const handleClear = () =>
@@ -194,7 +170,34 @@ export default function Transactions() {
       staff: "",
       date: new Date().toISOString().split("T")[0],
       remarks: "",
+      faultyType: "",
     });
+
+  const inTransactions = useMemo(() => {
+    return (transactionsIn || []).map((r) => ({
+      id: r.Id,
+      itemName: r.ItemName,
+      category: r.Category,
+      quantity: r.Quantity,
+      unit: r.Unit,
+      staff: r.Staff,
+      transaction: new Date(r.TransactionDate).toLocaleString(),
+      remarks: r.Remarks,
+    }));
+  }, [transactionsIn]);
+
+  const outTransactions = useMemo(() => {
+    return (transactionsOut || []).map((r) => ({
+      id: r.Id,
+      itemName: r.ItemName,
+      category: r.Category,
+      quantity: r.Quantity,
+      unit: r.Unit,
+      staff: r.Staff,
+      transaction: new Date(r.TransactionDate).toLocaleString(),
+      remarks: r.Remarks,
+    }));
+  }, [transactionsOut]);
 
   const inCols = useMemo(
     () => [
@@ -212,16 +215,16 @@ export default function Transactions() {
 
   const outCols = inCols;
 
+  if (loading) return <div className="p-6">Loading...</div>;
+  if (error) return <div className="p-6 text-red-500">{error}</div>;
+
   return (
     <div className="min-h-screen bg-gray-50 text-black">
-      {/* Header bar like screenshot */}
       <header className="bg-sky-300 border-b border-gray-300">
         <div className="max-w-[1500px] mx-auto px-4 py-4 flex items-center">
-          {/* Title */}
           <div className="flex-1 text-center">
-            <h1 className="text-4xl font-extrabold">Transcations</h1>
+            <h1 className="text-4xl font-extrabold">Transactions</h1>
           </div>
-
           <div className="text-right text-sm font-semibold">
             <div>
               <span className="font-extrabold">Today :</span> {formattedDate}
@@ -231,19 +234,15 @@ export default function Transactions() {
         </div>
       </header>
 
-      {/* Main content */}
       <main className="max-w-[1500px] mx-auto px-4 py-6">
         <div className="grid grid-cols-12 gap-6">
-          {/* LEFT: Enter New Transactions */}
           <section className="col-span-12 lg:col-span-5">
             <div className="bg-gray-100 border border-gray-300 p-4">
               <div className="font-bold text-black text-xl mb-4">
                 Enter New Transactions
               </div>
 
-              {/* Form grid arranged like the screenshot */}
               <div className="grid grid-cols-2 gap-x-8 gap-y-5">
-                {/* Transaction Type */}
                 <div>
                   <label className={labelBase}>Transaction Type</label>
                   <select
@@ -254,11 +253,12 @@ export default function Transactions() {
                   >
                     <option>Arrival (In)</option>
                     <option>Taken (Out)</option>
-                    <option>Dispatch</option>
+                    {CURRENT_STORE_ID === 1 && <option>Coupled</option>}
+                    {CURRENT_STORE_ID === 1 && <option>Dispatch</option>}
+                    <option>Faulty</option>
                   </select>
                 </div>
 
-                {/* Category */}
                 <div>
                   <label className={labelBase}>Category</label>
                   <select
@@ -268,46 +268,63 @@ export default function Transactions() {
                     className={inputBase}
                   >
                     <option value="">(select)</option>
-                    <option value="Meter Base">Meter Base</option>
-                    <option value="Meter Box">Meter Box</option>
-                    <option value="Breaker">Breaker</option>
-                    <option value="Battery">Battery</option>
-                    <option value="Cable">Cable</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
-                {/* Item Name */}
                 <div>
                   <label className={labelBase}>Item Name</label>
                   <select
                     name="itemName"
                     value={form.itemName}
                     onChange={handleChange}
+                    disabled={!form.category}
                     className={inputBase}
                   >
-                    <option value="">(select)</option>
-                    <option value="Meter Base">Meter Base</option>
-                    <option value="Three Phase Meter Box">
-                      Three Phase Meter Box
-                    </option>
-                    <option value="Breaker 800/5">Breaker 800/5</option>
-                    <option value="Meter Battery">Meter Battery</option>
+                    <option value="">(select category first)</option>
+                    {availableItems.map((item, idx) => (
+                      <option key={idx} value={item.ItemName}>
+                        {item.ItemName}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
-                {/* Quantity Remaining */}
                 <div>
-                  <label className={labelBase}>Quantity Remaining</label>
-                  <input
-                    name="quantityRemaining"
-                    value={form.quantityRemaining}
-                    onChange={handleChange}
-                    type="number"
-                    className={inputBase}
-                  />
+                  {form.type === "Faulty" ? (
+                    <>
+                      <label className={labelBase}>Faulty Type</label>
+                      <select
+                        name="faultyType"
+                        value={form.faultyType}
+                        onChange={handleChange}
+                        className={inputBase}
+                      >
+                        <option value="">(select)</option>
+                        <option value="damaged">damaged</option>
+                        <option value="expired">expired</option>
+                        <option value="broken">broken</option>
+                        <option value="returned">returned</option>
+                      </select>
+                    </>
+                  ) : (
+                    <>
+                      <label className={labelBase}>Quantity Remaining</label>
+                      <input
+                        name="quantityRemaining"
+                        value={form.quantityRemaining}
+                        type="number"
+                        disabled
+                        className={inputBase}
+                      />
+                    </>
+                  )}
                 </div>
 
-                {/* Quantity */}
                 <div>
                   <label className={labelBase}>Quantity</label>
                   <input
@@ -319,7 +336,6 @@ export default function Transactions() {
                   />
                 </div>
 
-                {/* Unit */}
                 <div>
                   <label className={labelBase}>Unit</label>
                   <select
@@ -334,13 +350,15 @@ export default function Transactions() {
                   </select>
                 </div>
 
-                {/* Partner (If Dispatch) */}
                 <div>
                   <label className={labelBase}>Partner (If Dispatch)</label>
                   <select
                     name="partner"
                     value={form.partner}
                     onChange={handleChange}
+                    disabled={
+                      form.type !== "Dispatch" && form.type !== "Coupled"
+                    }
                     className={inputBase}
                   >
                     <option value="">(select)</option>
@@ -351,10 +369,8 @@ export default function Transactions() {
                   </select>
                 </div>
 
-                {/* Spacer to match screenshot spacing */}
                 <div />
 
-                {/* Responsible Staff */}
                 <div className="col-span-1">
                   <label className={labelBase}>Responsible Staff</label>
                   <input
@@ -365,7 +381,6 @@ export default function Transactions() {
                   />
                 </div>
 
-                {/* Date */}
                 <div className="col-span-1">
                   <label className={labelBase}>Date</label>
                   <input
@@ -377,7 +392,6 @@ export default function Transactions() {
                   />
                 </div>
 
-                {/* Remarks textarea (full width) */}
                 <div className="col-span-2">
                   <label className={labelBase}>Remarks/Notes (Optional)</label>
                   <textarea
@@ -390,7 +404,6 @@ export default function Transactions() {
                 </div>
               </div>
 
-              {/* Buttons area bottom-right like screenshot */}
               <div className="mt-6 flex items-center justify-end gap-4">
                 <button
                   onClick={handleAdd}
@@ -399,7 +412,6 @@ export default function Transactions() {
                   <Plus size={20} />
                   Add
                 </button>
-
                 <button
                   onClick={handleClear}
                   className="h-12 px-6 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold flex items-center gap-2 shadow-sm transition"
@@ -411,15 +423,12 @@ export default function Transactions() {
             </div>
           </section>
 
-          {/* RIGHT: Tables */}
           <section className="col-span-12 lg:col-span-7 space-y-6">
-            {/* In Transaction Table */}
             <div className="bg-gray-100 border border-gray-300 p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="font-bold text-black text-xl">
                   In Transaction Table
                 </div>
-
                 <div className="flex items-center gap-3">
                   <div className="font-bold text-black">Sort By :</div>
                   <input
@@ -429,17 +438,14 @@ export default function Transactions() {
                   />
                 </div>
               </div>
-
               <Table columns={inCols} rows={inTransactions} />
             </div>
 
-            {/* Out Transaction Table */}
             <div className="bg-gray-100 border border-gray-300 p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="font-bold text-black text-xl">
                   Out Transaction Table
                 </div>
-
                 <div className="flex items-center gap-3">
                   <div className="font-bold text-black">Sort By :</div>
                   <input
@@ -449,14 +455,10 @@ export default function Transactions() {
                   />
                 </div>
               </div>
-
               <Table columns={outCols} rows={outTransactions} />
             </div>
 
-            {/* Bottom right controls like screenshot */}
             <div className="flex items-end justify-between">
-              
-
               <div className="flex gap-4">
                 <Link
                   to="/dashboard"
@@ -465,7 +467,6 @@ export default function Transactions() {
                   <Home size={20} />
                   Main
                 </Link>
-
                 <Link
                   to="/"
                   className="h-12 px-8 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold flex items-center gap-2 shadow-sm transition"

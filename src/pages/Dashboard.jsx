@@ -6,7 +6,6 @@ function cx(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
-
 function Card({ title, right = null, children, className = "" }) {
   return (
     <section
@@ -76,50 +75,73 @@ function TextInput({ value, onChange, placeholder = "Type to filter..." }) {
   );
 }
 
+// UPDATED TABLE COMPONENT: SCROLLABLE WITH 5-DATA HEIGHT
 function Table({ columns, rows }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-sky-50 text-black">
-            {columns.map((c) => (
-              <th
-                key={c.key}
-                className={cx(
-                  "px-4 py-3 text-left font-bold border-b border-gray-100 whitespace-nowrap",
-                  c.align === "center" && "text-center",
-                )}
-              >
-                {c.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-
-        <tbody>
-          {rows.map((r, idx) => (
-            <tr
-              key={idx}
-              className={cx(
-                "border-b border-gray-50 hover:bg-gray-50/60 transition",
-                idx % 2 === 1 && "bg-gray-50/30",
-              )}
-            >
+    <div className="flex flex-col">
+      <div
+        className="overflow-x-auto overflow-y-auto border border-gray-100 rounded-xl"
+        style={{ maxHeight: "200px" }} // Height for header + roughly 5 rows
+      >
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-sky-50 text-black sticky top-0 z-10">
               {columns.map((c) => (
-                <td
+                <th
                   key={c.key}
                   className={cx(
-                    "px-4 py-3 text-black whitespace-nowrap",
+                    "px-4 py-3 text-left font-bold border-b border-gray-200 whitespace-nowrap bg-sky-50",
                     c.align === "center" && "text-center",
                   )}
                 >
-                  {r[c.key]}
-                </td>
+                  {c.label}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody className="divide-y divide-gray-50">
+            {rows.length > 0 ? (
+              rows.map((r, idx) => (
+                <tr
+                  key={idx}
+                  className={cx(
+                    "hover:bg-gray-50/60 transition",
+                    idx % 2 === 1 && "bg-gray-50/30",
+                  )}
+                >
+                  {columns.map((c) => (
+                    <td
+                      key={c.key}
+                      className={cx(
+                        "px-4 py-3 text-black whitespace-nowrap",
+                        c.align === "center" && "text-center",
+                      )}
+                    >
+                      {r[c.key]}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={columns.length}
+                  className="px-4 py-10 text-center text-gray-400 italic"
+                >
+                  No records found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {rows.length > 5 && (
+        <div className="mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">
+          Scroll for more results ({rows.length} total)
+        </div>
+      )}
     </div>
   );
 }
@@ -150,21 +172,17 @@ function ItemsTree({ data }) {
 }
 
 export default function Dashboard() {
-
   const {
     loading,
     error,
-
     rawMaterials,
     finishedGoods,
     stats,
     meters,
     partners,
-
     filteredStore,
     filteredDist,
     filteredAvail,
-
     storeFilter,
     setStoreFilter,
     distFilter,
@@ -173,7 +191,6 @@ export default function Dashboard() {
     setAvailFilter,
   } = useDashboardData({ storeId: 1 });
 
-  // Live date/time
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -188,8 +205,6 @@ export default function Dashboard() {
     day: "numeric",
   });
 
-
-
   const storeColumns = useMemo(
     () => [
       { key: "id", label: "Id" },
@@ -203,7 +218,6 @@ export default function Dashboard() {
     ],
     [],
   );
-
 
   const bottomColumns = useMemo(
     () => [
@@ -220,15 +234,12 @@ export default function Dashboard() {
   );
 
   return (
-    // Page scrolls (spacious)
     <div className="min-h-screen bg-gray-50 text-black">
-      {/* Header */}
       <header className="bg-sky-300 border-b border-gray-200">
         <div className="max-w-[1500px] mx-auto px-4 py-4 flex items-center">
           <div className="flex-1 text-center">
             <h1 className="text-2xl font-extrabold">Metering DashBoard</h1>
           </div>
-
           <div className="text-right text-sm font-semibold">
             <div>
               <span className="font-extrabold">Today :</span> {formattedDate}
@@ -239,8 +250,6 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-[1400px] mx-auto px-6 py-8 space-y-8">
-        {/* Top row */}
-
         {error && (
           <div className="mb-4 p-3 rounded-xl border border-red-200 bg-red-50 text-sm">
             {error}
@@ -254,20 +263,15 @@ export default function Dashboard() {
         )}
 
         <div className="grid grid-cols-12 gap-6">
-          {/* Items in Store */}
           <Card title="Items in Store" className="col-span-12 lg:col-span-3">
-            <div className="space-y-6 max-h-[800px] overflow-y-auto p-4">
-              {/* Raw Materials */}
+            <div className="space-y-6 max-h-[700px] overflow-y-auto p-4">
               <div>
                 <h3 className="text-sm font-bold text-sky-700 mb-2">
                   Raw Materials
                 </h3>
                 <ItemsTree data={rawMaterials} />
               </div>
-
               <hr className="my-4 border-gray-300" />
-
-              {/* Finished Goods */}
               <div>
                 <h3 className="text-sm font-bold text-sky-700 mb-2">
                   Finished Goods
@@ -277,11 +281,9 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          {/* Stats + legend */}
           <div className="col-span-12 lg:col-span-9 space-y-6">
-            <div className="flex gap-4 w-full">
-              {/* 80% Section */}
-              <div className="w-4/5">
+            <div className="flex flex-col md:flex-row gap-4 w-full">
+              <div className="w-full md:w-4/5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {stats.map((s) => (
                     <StatTile
@@ -293,35 +295,30 @@ export default function Dashboard() {
                   ))}
                 </div>
               </div>
-
-              {/* 20% Section */}
-              <Card title="Stock Legend" className="w-1/5">
+              <Card title="Stock Legend" className="w-full md:w-1/5">
                 <Legend />
               </Card>
             </div>
 
-            <div className="flex gap-4 w-full">
-              <Card title="Meters" className="w-3/5">
+            <div className="flex flex-col md:flex-row gap-4 w-full">
+              <Card title="Meters" className="w-full md:w-3/5">
                 <div className="grid grid-cols-3 gap-y-3 text-sm">
                   <div />
                   <div className="font-bold text-center">Total Coupled</div>
                   <div className="font-bold text-center">Total Sent</div>
-
                   <div className="font-bold">SPMs :</div>
                   <div className="text-center">{meters.totalCoupled}</div>
                   <div className="text-center">{meters.totalSent}</div>
-
                   <div className="font-bold">TPMs :</div>
                   <div className="text-center">{meters.tpms}</div>
                   <div className="text-center">{meters.sentTpms}</div>
-
                   <div className="font-bold">CIUs :</div>
                   <div className="text-center">{meters.cius}</div>
                   <div className="text-center">{meters.sentCius}</div>
                 </div>
               </Card>
 
-              <Card title="Definitions" className="w-2/5">
+              <Card title="Definitions" className="w-full md:w-2/5">
                 <div className="grid grid-cols-2 gap-x-6 text-xs font-bold text-green-700 leading-6">
                   <div>
                     <div>PCBs: Printed Circuit Board</div>
@@ -336,25 +333,25 @@ export default function Dashboard() {
                 </div>
               </Card>
             </div>
-            <div>
-              <Card
-                title="Faulty Items Table"
-                className="col-span-12 lg:col-span-9"
-                right={
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold">Filter By:</span>
-                    <TextInput value={storeFilter} onChange={setStoreFilter} />
-                  </div>
-                }
-              >
-                <Table columns={storeColumns} rows={filteredStore} />
-              </Card>
-            </div>
+
+            <Card
+              title="Faulty Items Table"
+              className="col-span-12"
+              right={
+                <div className="flex items-center gap-3">
+                  <span className="hidden sm:inline text-sm font-semibold">
+                    Filter By:
+                  </span>
+                  <TextInput value={storeFilter} onChange={setStoreFilter} />
+                </div>
+              }
+            >
+              <Table columns={storeColumns} rows={filteredStore} />
+            </Card>
           </div>
         </div>
 
         <div className="grid grid-cols-12 gap-6 w-full">
-          {/* 20% */}
           <Card
             title="Total Meters Distributed"
             className="col-span-12 lg:col-span-3"
@@ -375,13 +372,14 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          {/* 80% */}
           <Card
             title="Meter Distributed"
             className="col-span-12 lg:col-span-9"
             right={
               <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold">Filter By:</span>
+                <span className="hidden sm:inline text-sm font-semibold">
+                  Filter By:
+                </span>
                 <TextInput value={distFilter} onChange={setDistFilter} />
               </div>
             }
@@ -390,14 +388,15 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Bottom tables */}
         <div className="grid grid-cols-12 gap-6">
           <Card
             title="Meter Available (Coupled)"
             className="col-span-12"
             right={
               <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold">Filter By:</span>
+                <span className="hidden sm:inline text-sm font-semibold">
+                  Filter By:
+                </span>
                 <TextInput value={availFilter} onChange={setAvailFilter} />
               </div>
             }
