@@ -75,13 +75,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
           active={isActive("/reports")}
           collapsed={isCollapsed}
         />
-        <SidebarLink
-          to="/settings"
-          icon={<Settings size={28} />}
-          label="Settings"
-          active={isActive("/settings")}
-          collapsed={isCollapsed}
-        />
       </nav>
 
       {/* Conditional Exit Button Section */}

@@ -1,20 +1,31 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { UserCircle } from "lucide-react";
 
 export default function SmartMeteringLanding() {
   const [time, setTime] = useState(new Date());
+  const navigate = useNavigate();
 
   // 1. Correctly map the nested user data from your login response
   const sessionData = JSON.parse(localStorage.getItem("protogy_user") || "{}");
-
-  // Handle the case where user data might be nested inside a 'user' key or flat
   const currentUser = sessionData.user || sessionData;
+  const isAdmin = currentUser.role?.toLowerCase() === "admin";
+
+  // State to track selected store before navigating
+  const [selectedStoreId, setSelectedStoreId] = useState(
+    currentUser.storeId || 1,
+  );
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Persist the selection and navigate
+  const handleCardClick = (path) => {
+    localStorage.setItem("active_terminal", selectedStoreId);
+    navigate(path);
+  };
 
   const formattedDate = time.toLocaleDateString("en-GB", {
     day: "2-digit",
@@ -34,7 +45,6 @@ export default function SmartMeteringLanding() {
       {/* Header */}
       <header className="bg-sky-300 border-b border-gray-200 shadow-sm shrink-0">
         <div className="max-w-[1800px] mx-auto px-8 py-4 flex items-center justify-between">
-          {/* 2. Fully Functional User Profile Section mapped to "tea" and "Store Manager" */}
           <div className="flex items-center space-x-3 bg-white/60 px-4 py-2 rounded-2xl border border-white shadow-sm">
             <UserCircle className="w-10 h-10 text-sky-700" />
             <div className="flex flex-col">
@@ -50,14 +60,12 @@ export default function SmartMeteringLanding() {
             </div>
           </div>
 
-          {/* Title */}
           <div className="flex-1 text-center">
             <h1 className="text-3xl font-black text-gray-900 tracking-tight">
               Metering DashBoard
             </h1>
           </div>
 
-          {/* Date & Time */}
           <div className="text-right text-base font-bold text-gray-800">
             <div>
               <span className="font-black">Today :</span> {formattedDate}
@@ -70,20 +78,31 @@ export default function SmartMeteringLanding() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <main className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-50/30 overflow-hidden">
-          {/* Select Store Dropdown - Pre-selected based on user.storeId */}
+          {/* Select Store Dropdown - Enabled only if Admin to allow switching terminals */}
           <div className="w-full max-w-6xl flex justify-end mb-4 items-center space-x-3">
             <span className="text-sm font-black text-slate-500 uppercase tracking-widest">
-              Current Store
+              Select Terminal
             </span>
             <select
-              value={currentUser.storeId || ""}
-              disabled
-              className="border-2 border-slate-200 rounded-xl px-4 py-2 w-72 bg-slate-100 outline-none text-base font-bold shadow-sm cursor-not-allowed transition-all"
+              value={selectedStoreId}
+              onChange={(e) => {
+                const newId = Number(e.target.value);
+                setSelectedStoreId(newId);
+                // Persist immediately so it's ready for the dashboard fetch
+                localStorage.setItem("active_terminal", newId);
+              }}
+              disabled={!isAdmin}
+              className={`border-2 border-slate-200 rounded-xl px-4 py-2 w-72 outline-none text-base font-bold shadow-sm transition-all ${
+                isAdmin
+                  ? "bg-white cursor-pointer"
+                  : "bg-slate-100 cursor-not-allowed"
+              }`}
             >
               <option value="1">Ibadan Office</option>
-              <option value="2">Lagos Office</option>
-              <option value="3">Ekiti Office</option>
-              <option value="4">Benin Office</option>
+              <option value="2">Benin Office</option>
+              <option value="3">Abuja Office</option>
+              <option value="4">Ekiti Office</option>
+              <option value="5">Okitipupa Office</option>
             </select>
           </div>
 
@@ -94,28 +113,43 @@ export default function SmartMeteringLanding() {
                 Welcome to the Protogy Store Automation System
               </h2>
               <p className="text-slate-600 text-lg font-semibold max-w-3xl mx-auto leading-relaxed">
-                Hello, {currentUser.username}. You are currently managing the{" "}
-                {currentUser.storeId === 1 ? "Ibadan" : "assigned"} terminal.
+                Hello, {currentUser.username}. Please select a section to manage
+                the terminal.
               </p>
             </div>
 
             {/* Info Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <InfoCard
-                color="bg-[#C6DBF7]"
-                title="Daily Transactions"
-                desc="Track and log all daily activities here."
-              />
-              <InfoCard
-                color="bg-[#C9F0D1]"
-                title="Inventory Overview"
-                desc="See what's in stock and manage your items."
-              />
-              <InfoCard
-                color="bg-[#FFF1A7]"
-                title="Sales Reports"
-                desc="Get insights and generate monthly summaries."
-              />
+              <div
+                onClick={() => handleCardClick("/dashboard")}
+                className="cursor-pointer"
+              >
+                <InfoCard
+                  color="bg-[#C6DBF7]"
+                  title="Daily Transactions"
+                  desc="Track and log all daily activities here."
+                />
+              </div>
+              <div
+                onClick={() => handleCardClick("/dashboard")}
+                className="cursor-pointer"
+              >
+                <InfoCard
+                  color="bg-[#C9F0D1]"
+                  title="Inventory Overview"
+                  desc="See what's in stock and manage your items."
+                />
+              </div>
+              <div
+                onClick={() => handleCardClick("/dashboard")}
+                className="cursor-pointer"
+              >
+                <InfoCard
+                  color="bg-[#FFF1A7]"
+                  title="Sales Reports"
+                  desc="Get insights and generate monthly summaries."
+                />
+              </div>
             </div>
           </div>
 

@@ -293,23 +293,6 @@ export default function ManageItems() {
           </section>
         </div>
 
-        {/* FOOTER */}
-        <div className="mt-6 flex items-center justify-between">
-          <div className="text-gray-600 text-xs italic">
-            A Property of Protogy Global Services Limited
-          </div>
-          <div className="flex gap-4">
-            <Link
-              to="/"
-              className="flex items-center gap-2 h-11 px-8 rounded-2xl bg-[#0095ff] text-white font-bold border border-gray-400 shadow"
-            >
-              <Home size={18} /> Main
-            </Link>
-            <button className="flex items-center gap-2 h-11 px-8 rounded-2xl bg-[#ec4848] text-white font-bold border border-gray-400 shadow">
-              <X size={18} /> Back
-            </button>
-          </div>
-        </div>
       </main>
 
       {/* POPUP MODAL */}

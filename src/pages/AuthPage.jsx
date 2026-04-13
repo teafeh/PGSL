@@ -162,9 +162,10 @@ const AuthPage = ({ onLogin }) => {
                   >
                     <option value="">Select Store Location</option>
                     <option value="Ibadan">Ibadan Office</option>
-                    <option value="Lagos">Lagos Office</option>
-                    <option value="Ekiti">Ekiti Office</option>
                     <option value="Benin">Benin Office</option>
+                    <option value="Abuja">Abuja Office</option>
+                    <option value="Ekiti">Ekiti Office</option>
+                    <option value="Okitipupa">Okitipupa Office</option>
                   </select>
                 </div>
               )}

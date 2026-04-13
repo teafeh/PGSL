@@ -52,7 +52,8 @@ function Table({ columns, rows }) {
 }
 
 export default function Transactions() {
-  const CURRENT_STORE_ID = 1;
+  // Use the dynamic active_terminal from localStorage
+  const CURRENT_STORE_ID = Number(localStorage.getItem("active_terminal")) || 1;
 
   const {
     loading,
@@ -60,9 +61,9 @@ export default function Transactions() {
     createTransaction,
     transactionsIn,
     transactionsOut,
-    masterData, // NEW: Full list from Raw Materials endpoint
-    availableItems, // NEW: Items filtered by selected category from master list
-    filterItemsByCategory, // NEW: Function to filter the master list
+    masterData,
+    availableItems,
+    filterItemsByCategory,
   } = useTransactions({ storeId: CURRENT_STORE_ID });
 
   const [form, setForm] = useState({
@@ -79,9 +80,9 @@ export default function Transactions() {
     faultyType: "",
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [sortIn, setSortIn] = useState("ItemName, Category, Partner, Date");
   const [sortOut, setSortOut] = useState("ItemName, Category, Partner, Date");
-
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -89,7 +90,6 @@ export default function Transactions() {
     return () => clearInterval(interval);
   }, []);
 
-  // ✅ Extract all unique categories from the MASTER DATA list
   const categories = useMemo(() => {
     const set = new Set(masterData.map((item) => item.Category));
     return Array.from(set).filter(Boolean).sort();
@@ -105,10 +105,8 @@ export default function Transactions() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setForm((prev) => ({ ...prev, [name]: value }));
 
-    // ✅ When category changes, filter the Master List for items
     if (name === "category") {
       filterItemsByCategory(value);
       setForm((prev) => ({
@@ -119,7 +117,6 @@ export default function Transactions() {
       }));
     }
 
-    // ✅ When Item Name is selected, get quantity from the pre-loaded Master Data
     if (name === "itemName") {
       const selectedItem = masterData.find((item) => item.ItemName === value);
       setForm((prev) => ({
@@ -136,12 +133,15 @@ export default function Transactions() {
       return;
     }
 
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
     try {
       await createTransaction({
         storeId: CURRENT_STORE_ID,
         actionType: form.type,
         itemName: form.itemName,
-        category: form.category, // Pass category to backend
+        category: form.category,
         quantity: Number(form.quantity),
         unit: form.unit,
         staff: form.staff,
@@ -155,6 +155,8 @@ export default function Transactions() {
       handleClear();
     } catch (err) {
       alert(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -407,10 +409,24 @@ export default function Transactions() {
               <div className="mt-6 flex items-center justify-end gap-4">
                 <button
                   onClick={handleAdd}
-                  className="h-12 px-6 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-bold flex items-center gap-2 shadow-sm transition"
+                  disabled={isSubmitting}
+                  className={`h-12 px-6 rounded-2xl font-bold flex items-center gap-2 shadow-sm transition ${
+                    isSubmitting
+                      ? "bg-slate-300 cursor-not-allowed opacity-70"
+                      : "bg-sky-500 hover:bg-sky-600 text-white"
+                  }`}
                 >
-                  <Plus size={20} />
-                  Add
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={20} />
+                      Add
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={handleClear}
@@ -458,24 +474,7 @@ export default function Transactions() {
               <Table columns={outCols} rows={outTransactions} />
             </div>
 
-            <div className="flex items-end justify-between">
-              <div className="flex gap-4">
-                <Link
-                  to="/dashboard"
-                  className="h-12 px-8 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-bold flex items-center gap-2 shadow-sm transition"
-                >
-                  <Home size={20} />
-                  Main
-                </Link>
-                <Link
-                  to="/"
-                  className="h-12 px-8 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold flex items-center gap-2 shadow-sm transition"
-                >
-                  <X size={20} />
-                  Close
-                </Link>
-              </div>
-            </div>
+          
           </section>
         </div>
       </main>

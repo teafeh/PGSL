@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 
-export const useTransactions = ({ storeId }) => {
+export const useTransactions = ({ storeId: propStoreId } = {}) => {
+  // 1. Prioritize active_terminal from storage, fallback to props, then default to 1
+  const [storeId, setStoreId] = useState(
+    () => Number(localStorage.getItem("active_terminal")) || propStoreId || 1,
+  );
+
   const [transactionsIn, setTransactionsIn] = useState([]);
   const [transactionsOut, setTransactionsOut] = useState([]);
   const [masterData, setMasterData] = useState([]); // Full list of Raw Materials
@@ -9,8 +14,21 @@ export const useTransactions = ({ storeId }) => {
   const [error, setError] = useState("");
 
   const BASE_URL = "https://backend-pgsl.vercel.app/api/transactions";
-  const MASTER_URL =
-    "https://backend-pgsl.vercel.app/api/dashboard/items-quantity?storeId=1&goodsType=Raw%20Materials";
+
+  // Dynamic Master URL - no longer hardcoded to storeId=1
+  const MASTER_URL = `https://backend-pgsl.vercel.app/api/dashboard/items-quantity?storeId=${storeId}&goodsType=Raw%20Materials`;
+
+  // 2. Listener to update hook if terminal changes elsewhere in the app
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const currentId =
+        Number(localStorage.getItem("active_terminal")) || propStoreId || 1;
+      setStoreId(currentId);
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [propStoreId]);
 
   const fetchMasterData = async () => {
     try {
@@ -42,7 +60,6 @@ export const useTransactions = ({ storeId }) => {
     }
   };
 
-  // ✅ New Logic: Filter items from the Master List local state
   const filterItemsByCategory = (category) => {
     const filtered = masterData.filter((item) => item.Category === category);
     setAvailableItems(filtered);
@@ -62,7 +79,6 @@ export const useTransactions = ({ storeId }) => {
       const responseData = await res.json();
       if (!res.ok) throw new Error(responseData.message || "Failed");
 
-      // Refresh transaction tables and master quantities
       await Promise.all([
         fetchInTransactions(),
         fetchOutTransactions(),
@@ -92,11 +108,12 @@ export const useTransactions = ({ storeId }) => {
   return {
     transactionsIn,
     transactionsOut,
-    masterData, // All categories and items
-    availableItems, // Items for the selected category
+    masterData,
+    availableItems,
     loading,
     error,
     filterItemsByCategory,
     createTransaction,
+    currentStoreId: storeId, // Exported so components know which terminal is active
   };
 };
