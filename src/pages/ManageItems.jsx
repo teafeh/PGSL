@@ -1,12 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Home, X, RotateCcw, Truck, Plus } from "lucide-react";
+import { Home, X, RotateCcw, Truck, Plus, Loader2 } from "lucide-react";
+import { useManageItems } from "../hooks/useManageItems";
 
 const inputWin =
   "h-10 w-full border border-gray-400 bg-white px-3 text-sm text-black outline-none focus:border-sky-500";
 const labelWin = "text-sm font-semibold text-black mb-1 block";
 
-function WinTable({ columns, rows, minWidth = "min-w-[720px]" }) {
+function WinTable({ columns, rows, minWidth = "min-w-[720px]", loading }) {
+  if (loading)
+    return (
+      <div className="flex flex-col items-center justify-center py-10 bg-white border border-gray-400">
+        <Loader2 className="animate-spin text-sky-500 mb-2" />
+        <p className="text-xs text-gray-500">Loading data...</p>
+      </div>
+    );
+
   return (
     <div className="border border-gray-400 bg-white overflow-x-auto shadow-inner">
       <table className={`w-full ${minWidth} text-sm border-collapse`}>
@@ -26,24 +35,35 @@ function WinTable({ columns, rows, minWidth = "min-w-[720px]" }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((r, idx) => (
-            <tr
-              key={r.id ?? idx}
-              className="hover:bg-sky-50 even:bg-gray-50/50"
-            >
-              {columns.map((c) => (
-                <td
-                  key={c.key}
-                  className={[
-                    "border border-gray-300 px-3 py-1.5 text-black whitespace-nowrap",
-                    c.align === "center" ? "text-center" : "",
-                  ].join(" ")}
-                >
-                  {c.render ? c.render(r) : r[c.key]}
-                </td>
-              ))}
+          {rows && rows.length > 0 ? (
+            rows.map((r, idx) => (
+              <tr
+                key={r.Id ?? r.id ?? idx}
+                className="hover:bg-sky-50 even:bg-gray-50/50"
+              >
+                {columns.map((c) => (
+                  <td
+                    key={c.key}
+                    className={[
+                      "border border-gray-300 px-3 py-1.5 text-black whitespace-nowrap",
+                      c.align === "center" ? "text-center" : "",
+                    ].join(" ")}
+                  >
+                    {c.render ? c.render(r) : r[c.key]}
+                  </td>
+                ))}
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td
+                colSpan={columns.length}
+                className="text-center py-10 text-gray-400"
+              >
+                No records found.
+              </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>
@@ -51,88 +71,111 @@ function WinTable({ columns, rows, minWidth = "min-w-[720px]" }) {
 }
 
 export default function ManageItems() {
+  const {
+    inventoryItems,
+    coupledItems,
+    loading,
+    error,
+    addNewItem,
+    processDispatch,
+    setActiveCategory,
+  } = useManageItems(1);
+
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [requiredDispatch, setRequiredDispatch] = useState(100);
+  const [requiredDispatch, setRequiredDispatch] = useState(0);
   const [selectedRowIds, setSelectedRowIds] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Form states
+  // State to track if we are currently sending a dispatch request
+  const [isDispatching, setIsDispatching] = useState(false);
+
   const [itemName, setItemName] = useState("");
   const [category, setCategory] = useState("");
   const [goodsType, setGoodsType] = useState("");
-  const [storeCategory, setStoreCategory] = useState("");
+  const [storeCategory, setStoreCategory] = useState("Meter");
+  const [remarks, setRemarks] = useState("done");
 
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
 
-  const rightRows = useMemo(
-    () => [
-      {
-        id: 2,
-        category: "Meter",
-        partner: "IBEDC",
-        qtyCoupled: 350,
-        unit: "Pieces",
-      },
-      {
-        id: 3,
-        category: "Meter",
-        partner: "None",
-        qtyCoupled: 200,
-        unit: "Pieces",
-      },
-      {
-        id: 4,
-        category: "Meter",
-        partner: "None",
-        qtyCoupled: 100,
-        unit: "Pieces",
-      },
-      {
-        id: 5,
-        category: "Meter",
-        partner: "None",
-        qtyCoupled: 200,
-        unit: "Pieces",
-      },
-    ],
-    [],
-  );
+  const totalSelectedQty = coupledItems
+    .filter((r) => selectedRowIds.includes(r.Id))
+    .reduce((sum, item) => sum + (item.Qty_Coupled || 0), 0);
 
-  // Calculate total quantity of currently selected items
-  const totalSelectedQty = rightRows
-    .filter((r) => selectedRowIds.includes(r.id))
-    .reduce((sum, item) => sum + item.qtyCoupled, 0);
+  const handleAddItem = async () => {
+    if (!itemName || !category) return alert("Fill Name and Category");
+    const success = await addNewItem({
+      itemName,
+      category,
+      goodsType,
+      storeCategory,
+    });
+    if (success) {
+      handleClear();
+    }
+  };
 
   const handleProceed = () => {
     if (selectedRowIds.length === 0) {
       alert("Please select items from the table first.");
       return;
     }
-
     if (requiredDispatch > totalSelectedQty) {
       alert(
         `Insufficient Stock! Required (${requiredDispatch}) is higher than Selected (${totalSelectedQty}).`,
       );
-      return; // "It don't go at all"
+      return;
     }
+    setIsModalOpen(true);
+  };
 
-    if (requiredDispatch === totalSelectedQty) {
-      alert("Desired number has been reached");
-      setIsModalOpen(true);
-    } else if (requiredDispatch < totalSelectedQty) {
-      setIsModalOpen(true);
+  const handleDispatchAction = async () => {
+    // Prevent double execution
+    if (isDispatching) return;
+
+    setIsDispatching(true);
+    try {
+      // Logic from your working code
+      const selectedRows = coupledItems
+        .filter((r) => selectedRowIds.includes(r.Id))
+        .map((r) => ({
+          id: r.Id,
+          itemId: r.ItemId,
+          usedQty: requiredDispatch / selectedRowIds.length,
+        }));
+
+      const firstItem = coupledItems.find((r) => r.Id === selectedRowIds[0]);
+
+      const success = await processDispatch({
+        partnerName: firstItem?.Partner || "Unknown",
+        staffName: "Tea",
+        totalQty: requiredDispatch,
+        itemIdsString: selectedRowIds.join(","),
+        remarks: remarks,
+        unit: firstItem?.Unit || "Pieces",
+        selectedRows: selectedRows,
+      });
+
+      if (success) {
+        setIsModalOpen(false);
+        setSelectedRowIds([]);
+        setRequiredDispatch(0);
+      }
+    } catch (err) {
+      console.error("Frontend Dispatch Error:", err);
+    } finally {
+      // This ensures the button is re-enabled even if the request fails
+      setIsDispatching(false);
     }
   };
 
-  const handleDispatchAction = () => {
-    const remaining = totalSelectedQty - requiredDispatch;
-    console.log(
-      `Dispatching ${requiredDispatch} items. Remaining from selected batch: ${remaining}`,
-    );
-    setIsModalOpen(false);
+  const handleClear = () => {
+    setItemName("");
+    setCategory("");
+    setGoodsType("");
+    setStoreCategory("Meter");
   };
 
   const rightCols = useMemo(
@@ -144,22 +187,22 @@ export default function ManageItems() {
         render: (row) => (
           <input
             type="checkbox"
-            checked={selectedRowIds.includes(row.id)}
+            checked={selectedRowIds.includes(row.Id)}
             onChange={() => {
               setSelectedRowIds((prev) =>
-                prev.includes(row.id)
-                  ? prev.filter((i) => i !== row.id)
-                  : [...prev, row.id],
+                prev.includes(row.Id)
+                  ? prev.filter((i) => i !== row.Id)
+                  : [...prev, row.Id],
               );
             }}
           />
         ),
       },
-      { key: "id", label: "Id" },
-      { key: "category", label: "Category" },
-      { key: "partner", label: "Partner" },
-      { key: "qtyCoupled", label: "Qty_Coupled", align: "center" },
-      { key: "unit", label: "Unit" },
+      { key: "Id", label: "Id" },
+      { key: "ItemName", label: "Item Name" },
+      { key: "Partner", label: "Partner" },
+      { key: "Qty_Coupled", label: "Qty_Coupled", align: "center" },
+      { key: "Unit", label: "Unit" },
     ],
     [selectedRowIds],
   );
@@ -168,10 +211,10 @@ export default function ManageItems() {
     <div className="min-h-screen bg-white text-black font-sans select-none">
       <header className="bg-[#93d5ff] border-b border-gray-300">
         <div className="max-w-[1500px] mx-auto px-4 py-3 flex justify-between items-center">
-          <h1 className="text-4xl font-extrabold flex-1 text-center">
+          <h1 className="text-4xl font-extrabold flex-1 text-center text-black">
             Manage Inventory
           </h1>
-          <div className="text-right text-sm font-semibold">
+          <div className="text-right text-sm font-semibold text-black">
             <div>
               {currentTime.toLocaleDateString("en-US", {
                 weekday: "long",
@@ -186,8 +229,12 @@ export default function ManageItems() {
       </header>
 
       <main className="max-w-[1600px] mx-auto px-4 py-5">
+        {error && (
+          <div className="mb-4 p-2 bg-red-100 text-red-600 text-xs font-bold border border-red-200">
+            Backend Error: {error}
+          </div>
+        )}
         <div className="grid grid-cols-12 gap-0">
-          {/* LEFT SIDE */}
           <section className="col-span-12 lg:col-span-5 p-5 bg-[#eeeeee] border border-gray-300">
             <h2 className="font-bold text-xl mb-6">New Item and Category</h2>
             <div className="grid grid-cols-2 gap-4 mb-6">
@@ -224,7 +271,11 @@ export default function ManageItems() {
                 <select
                   className={inputWin}
                   value={storeCategory}
-                  onChange={(e) => setStoreCategory(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setStoreCategory(val);
+                    if (val) setActiveCategory(val);
+                  }}
                 >
                   <option value="">(select)</option>
                   <option value="Meter">Meter</option>
@@ -234,20 +285,27 @@ export default function ManageItems() {
               </div>
             </div>
             <div className="flex justify-center gap-4 mb-8">
-              <button className="flex items-center gap-2 h-11 px-8 rounded-2xl bg-[#ec4848] text-white font-bold border border-gray-400 shadow">
+              <button
+                onClick={handleClear}
+                className="flex items-center gap-2 h-11 px-8 rounded-2xl bg-[#ec4848] text-white font-bold border border-gray-400 shadow"
+              >
                 <X size={18} /> Clear
               </button>
-              <button className="flex items-center gap-2 h-11 px-8 rounded-2xl bg-[#0095ff] text-white font-bold border border-gray-400 shadow">
+              <button
+                onClick={handleAddItem}
+                className="flex items-center gap-2 h-11 px-8 rounded-2xl bg-[#0095ff] text-white font-bold border border-gray-400 shadow"
+              >
                 <Plus size={18} /> Add
               </button>
             </div>
             <WinTable
+              loading={loading}
               columns={[
-                { key: "id", label: "Id" },
-                { key: "itemName", label: "ItemName" },
-                { key: "category", label: "Category" },
+                { key: "Id", label: "Id" },
+                { key: "ItemName", label: "ItemName" },
+                { key: "Category", label: "Category" },
               ]}
-              rows={[]}
+              rows={inventoryItems}
             />
           </section>
 
@@ -255,13 +313,12 @@ export default function ManageItems() {
             <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-2.5 bg-[#0095ff] rounded-full border border-gray-800 my-4" />
           </div>
 
-          {/* RIGHT SIDE */}
           <section className="col-span-12 lg:col-span-6 p-5 bg-[#eeeeee] border border-gray-300">
-            <h2 className="font-bold text-xl mb-4">
+            <h2 className="font-bold text-xl mb-4 text-black">
               Update Coupled Item For Dispatch
             </h2>
             <div className="flex items-center justify-between mb-4">
-              <div className="text-sm font-bold">
+              <div className="text-sm font-bold text-black">
                 Total Selected:{" "}
                 <span className="text-lg text-blue-700">
                   {totalSelectedQty}
@@ -284,27 +341,28 @@ export default function ManageItems() {
             </div>
             <div className="bg-white border border-gray-400">
               <WinTable
+                loading={loading}
                 columns={rightCols}
-                rows={rightRows}
+                rows={coupledItems}
                 minWidth="min-w-[700px]"
               />
-              <div className="h-[280px] bg-gray-400/20 border-t border-gray-400" />
+              <div className="h-[280px] bg-gray-400/20 border-t border-gray-400 flex items-center justify-center text-gray-500 italic">
+                No graph data selected
+              </div>
             </div>
           </section>
         </div>
-
       </main>
 
-      {/* POPUP MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
-          <div className="w-[780px] bg-[#f0f0f0] border-2 border-gray-400 shadow-2xl rounded-sm overflow-hidden">
+          <div className="w-[780px] bg-[#f0f0f0] border-2 border-gray-400 shadow-2xl rounded-sm overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="bg-white px-3 py-1 flex justify-between items-center border-b border-gray-300">
               <div className="flex items-center gap-2 text-[11px] font-medium text-gray-600">
                 <div className="w-3.5 h-3.5 bg-sky-500 rounded-sm" />{" "}
                 ManageItemUp
               </div>
-              <button onClick={() => setIsModalOpen(false)}>
+              <button onClick={() => !isDispatching && setIsModalOpen(false)}>
                 <X size={14} />
               </button>
             </div>
@@ -329,15 +387,19 @@ export default function ManageItems() {
                   </div>
                   <div>
                     <label className={labelWin}>Trans. Type</label>
-                    <input className={inputWin} defaultValue="Dispatch" />
+                    <input
+                      className={inputWin}
+                      defaultValue="Dispatch"
+                      readOnly
+                    />
                   </div>
                   <div>
                     <label className={labelWin}>Partners</label>
                     <input
                       className={inputWin}
                       value={
-                        rightRows.find((r) => r.id === selectedRowIds[0])
-                          ?.partner || "None"
+                        coupledItems.find((r) => r.Id === selectedRowIds[0])
+                          ?.Partner || "Multiple"
                       }
                       readOnly
                     />
@@ -347,34 +409,43 @@ export default function ManageItems() {
                     <input
                       type="number"
                       className={inputWin}
-                      defaultValue={requiredDispatch}
+                      value={requiredDispatch}
+                      readOnly
                     />
                   </div>
                   <div className="col-span-2">
                     <label className={labelWin}>Responsible Staff</label>
-                    <input className={inputWin} placeholder="Tea" />
+                    <input className={inputWin} defaultValue="Tea" readOnly />
                   </div>
                   <div className="col-span-2">
                     <label className={labelWin}>Remarks</label>
                     <textarea
                       className={`${inputWin} h-20 py-2 resize-none`}
-                      defaultValue="done"
+                      value={remarks}
+                      onChange={(e) => setRemarks(e.target.value)}
                     />
                   </div>
                 </div>
               </div>
               <div className="flex justify-center gap-8 mt-8">
                 <button
+                  disabled={isDispatching}
                   onClick={() => setIsModalOpen(false)}
-                  className="bg-[#ec4848] text-white font-bold py-3 px-12 rounded-full border border-gray-400 shadow-md flex items-center gap-2"
+                  className="bg-[#ec4848] text-white font-bold py-3 px-12 rounded-full border border-gray-400 shadow-md flex items-center gap-2 disabled:opacity-50"
                 >
-                  <RotateCcw size={20} /> Clear
+                  <RotateCcw size={20} /> Cancel
                 </button>
                 <button
+                  disabled={isDispatching}
                   onClick={handleDispatchAction}
-                  className="bg-[#b3b3b3] text-black font-bold py-3 px-12 rounded-full border border-gray-500 shadow-md flex items-center gap-2"
+                  className="bg-[#48b4ff] text-white font-bold py-3 px-12 rounded-full border border-gray-500 shadow-md flex items-center gap-2 hover:bg-sky-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Truck size={20} /> Dispatch
+                  {isDispatching ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : (
+                    <Truck size={20} />
+                  )}
+                  {isDispatching ? "Processing..." : "Dispatch"}
                 </button>
               </div>
             </div>
