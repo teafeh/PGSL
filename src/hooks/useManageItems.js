@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
-const API_BASE_URL = "http://localhost:3000/api/manage-items";
+const API_BASE_URL = "https://backend-pgsl.vercel.app/api/manage-items";
 
 export const useManageItems = (storeId = 1) => {
   // --- States ---
